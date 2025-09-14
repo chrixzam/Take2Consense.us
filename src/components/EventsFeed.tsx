@@ -141,7 +141,7 @@ export function EventsFeed({
       )}
 
       {canFetch && (
-        <div className="bg-white/90 rounded-2xl shadow-sm border border-gray-200">
+        <div className="bg-white/[0.78] rounded-2xl shadow-sm border border-gray-200">
           {loading ? (
             <div className="p-6 text-sm text-gray-600">Loading events…</div>
           ) : error ? (
@@ -149,7 +149,7 @@ export function EventsFeed({
           ) : events.length === 0 ? (
             <div className="p-6 text-sm text-gray-600">No events found.</div>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-100 max-w-2xl mx-auto">
               {events.map((ev) => {
                 const searchQuery = encodeURIComponent([
                   ev.title,
