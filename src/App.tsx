@@ -197,6 +197,18 @@ function App() {
     setCurrentSession(updatedSession);
   };
 
+  const handleDeleteSession = (sessionId: string) => {
+    setSessions(prev => {
+      const updated = prev.filter(s => s.id !== sessionId);
+      // Persist even when empty to ensure deletion sticks
+      localStorage.setItem('groupSessions', JSON.stringify(updated));
+      return updated;
+    });
+    if (currentSession && currentSession.id === sessionId) {
+      setCurrentSession(null);
+    }
+  };
+
   const handleBackToSessions = () => {
     setCurrentSession(null);
   };
@@ -237,6 +249,7 @@ function App() {
           session={currentSession}
           currentUser={currentUser}
           onUpdateSession={handleUpdateSession}
+          onDeleteSession={handleDeleteSession}
           onBack={handleBackToSessions}
         />
         <VersionBadge />
@@ -252,6 +265,7 @@ function App() {
         onSelectSession={handleSelectSession}
         onCreateNew={() => setShowCreateForm(true)}
         onJoinSession={() => setShowJoinForm(true)}
+        onDeleteSession={handleDeleteSession}
         userCoords={userCoords || undefined}
         userCountry={userCountry}
         currentCity={currentCity}

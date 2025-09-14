@@ -10,17 +10,18 @@ import { EventsFeed } from './EventsFeed';
 import { EventIdea, User, GroupSession } from '../types';
 import { categorizeEvent } from '../utils/eventCategories';
 import { forwardGeocodeCity } from '../utils/geolocation';
-import { Calendar, Grid3X3, Sparkles, Users, MapPin, Share2 } from 'lucide-react';
+import { Calendar, Grid3X3, Sparkles, Users, MapPin, Share2, Trash2 } from 'lucide-react';
 import type { FeedEvent } from '../types';
 
 interface SessionViewProps {
   session: GroupSession;
   currentUser: User;
   onUpdateSession: (session: GroupSession) => void;
+  onDeleteSession?: (sessionId: string) => void;
   onBack: () => void;
 }
 
-export function SessionView({ session, currentUser, onUpdateSession, onBack }: SessionViewProps) {
+export function SessionView({ session, currentUser, onUpdateSession, onDeleteSession, onBack }: SessionViewProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRandomModal, setShowRandomModal] = useState(false);
@@ -228,6 +229,20 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
                 >
                   <Share2 className="w-4 h-4" />
                 </button>
+                {onDeleteSession && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Delete this session? This cannot be undone.')) {
+                        onDeleteSession(session.id);
+                      }
+                    }}
+                    className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-full text-xs font-medium text-red-700 hover:from-red-200 hover:to-red-300 transition-all"
+                    title="Delete session"
+                    aria-label="Delete session"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
             {session.description && (

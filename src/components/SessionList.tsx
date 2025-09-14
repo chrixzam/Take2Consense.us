@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus } from 'lucide-react';
+import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus, Trash2 } from 'lucide-react';
 import { Navigation } from './Navigation';
 import { EventsFeed } from './EventsFeed';
 import { GroupSession } from '../types';
@@ -13,6 +13,7 @@ interface SessionListProps {
   onSelectSession: (session: GroupSession) => void;
   onCreateNew: () => void;
   onJoinSession: () => void;
+  onDeleteSession?: (sessionId: string) => void;
   userCoords?: Coords;
   currentCity: string;
   onCityChange: (city: string) => void;
@@ -20,7 +21,7 @@ interface SessionListProps {
   onAddEventFromFeed?: (ev: FeedEvent) => void;
 }
 
-export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed }: SessionListProps) {
+export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -92,6 +93,21 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
                     <p className="text-gray-600 text-sm line-clamp-2 mb-3">{session.description}</p>
                   )}
                 </div>
+                {onDeleteSession && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Delete this session? This cannot be undone.')) {
+                        onDeleteSession(session.id);
+                      }
+                    }}
+                    className="ml-3 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete session"
+                    aria-label="Delete session"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
               </div>
 
               <div className="space-y-3">
