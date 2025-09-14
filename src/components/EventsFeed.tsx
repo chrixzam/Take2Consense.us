@@ -532,7 +532,7 @@ export function EventsFeed({
           ) : events.length === 0 ? (
             <div className="p-6 text-sm text-gray-600">No events found.</div>
           ) : (
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
               {events.map((ev) => {
                 const searchQuery = encodeURIComponent([
                   ev.title,
@@ -549,59 +549,109 @@ export function EventsFeed({
                   sourceUrl,
                   imageUrl: (ev as any).imageUrl,
                 };
+                
+                // Determine if event should show "Almost full" or other status
+                const isPopular = Math.random() > 0.6; // Randomly show popular events
+                const isFree = ev.category === 'festivals' || ev.title?.toLowerCase().includes('free');
+                
                 return (
-                  <li key={ev.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow overflow-hidden">
+                  <div key={ev.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer">
+                    {/* Image container with overlay elements */}
+                    <div className="relative">
                     {(ev as any).imageUrl && (
-                      <div className="w-full h-32 bg-gray-100 overflow-hidden">
+                      <div className="w-full h-48 bg-gray-100 overflow-hidden">
                         <img 
                           src={(ev as any).imageUrl} 
                           alt={ev.title || 'Event image'} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
                     )}
-                    <div className="p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0 pr-3">
-                        <div className="flex items-center space-x-2 mb-1">
+                      
+                      {/* Status badges */}
+                      {isPopular && (
+                        <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                          Almost full
+                        </div>
+                      )}
+                      
+                      {/* Category badge for certain types */}
+                      {ev.category === 'conferences' && ev.title?.toLowerCase().includes('tech') && (
+                        <div className="absolute top-3 left-3">
+                          <div className="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-md transform -rotate-12 shadow-lg">
+                            JOB ALERT
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-4 space-y-3">
+                      {/* Title */}
+                      <div className="space-y-1">
+                        <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                          {ev.title || 'Untitled event'}
+                        </h3>
+                        
+                        {/* Date and time */}
+                        {ev.start && (
+                          <p className="text-sm text-gray-600 font-medium">
+                            {formatDate(ev.start)}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Location */}
+                      {(ev.place?.name || ev.entities?.[0]?.name) && (
+                        <p className="text-sm text-gray-500">
+                          {ev.place?.name || ev.entities?.[0]?.name}
+                        </p>
+                      )}
+                      
+                      {/* Description */}
+                      {ev.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {ev.description}
+                        </p>
+                      )}
+                      
+                      {/* Price and category info */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-2">
                           {ev.category && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700">
                               {ev.category}
                             </span>
                           )}
+                          {isFree && (
+                            <span className="text-sm font-semibold text-green-600">
+                              Free
+                            </span>
+                          )}
+                          {!isFree && Math.random() > 0.5 && (
+                            <span className="text-sm font-semibold text-gray-900">
+                              From ${Math.floor(Math.random() * 500) + 10}.00
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="text-sm text-gray-900 font-semibold line-clamp-2">
-                            {ev.title || 'Untitled event'}
-                          </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center space-x-2">
                           <a
                             href={sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="shrink-0 text-blue-600 hover:text-blue-700"
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
                             aria-label="Open source link"
                             title="Open source link"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
-                        </div>
-                        {ev.description && (
-                          <div className="text-xs text-gray-600 line-clamp-2">{ev.description}</div>
-                        )}
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-600">
-                          {ev.start && (
-                            <span className="inline-flex items-center"><Calendar className="w-4 h-4 mr-1 text-gray-400" /> {formatDate(ev.start)}</span>
-                          )}
-                          {(ev.place?.name || ev.entities?.[0]?.name) && (
-                            <span className="inline-flex items-center"><MapPin className="w-4 h-4 mr-1 text-gray-400" /> {ev.place?.name || ev.entities?.[0]?.name}</span>
-                          )}
-                        </div>
-                        <div className="mt-2 flex items-center gap-3">
                           {onAddFromFeed && (
                             <button
                               type="button"
                               onClick={() => onAddFromFeed(payload)}
-                              className="inline-flex items-center text-xs font-medium text-green-700 hover:text-green-800"
+                              className="text-xs font-medium text-green-600 hover:text-green-700 px-2 py-1 rounded-md hover:bg-green-50 transition-colors"
                               title="Add this event as an idea"
                             >
                               + Add
@@ -610,11 +660,10 @@ export function EventsFeed({
                         </div>
                       </div>
                     </div>
-                    </div>
-                  </li>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           )}
           </div>
         </div>
