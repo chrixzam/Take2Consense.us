@@ -53,9 +53,6 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.Other}`}>
-                {event.category}
-              </span>
               <span className="text-xs text-gray-500">by {event.suggestedBy}</span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
@@ -106,6 +103,9 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-3 text-sm text-gray-600">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.Other}`}>
+              {event.category}
+            </span>
             <User className="w-4 h-4" />
             <span>{event.votes} votes</span>
             {event.sourceUrl && (
