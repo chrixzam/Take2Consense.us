@@ -271,14 +271,14 @@ export function PlanningInput({
     <>
       {/* Idea input box under hero text (glassy underline style; buttons under text) */}
       <div className="max-w-2xl mx-auto mt-6 px-2">
-        <div className="relative rounded-2xl bg-gray-700 ring-1 ring-white/20 shadow-xl shadow-blue-900/20 pb-12">
+        <div className="relative rounded-2xl bg-gradient-to-r from-blue-400 to-cyan-400 ring-1 ring-white/30 shadow-xl shadow-blue-500/30 pb-12">
           <input
             type="text"
             value={ideaText}
             onChange={(e) => setIdeaText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your idea and we'll plan it together…"
-            className="w-full bg-transparent px-5 pr-44 py-5 text-lg text-white placeholder-gray-300 rounded-2xl outline-none border-b border-white/20 focus:border-cyan-400/60"
+            className="w-full bg-transparent px-5 pr-44 py-5 text-lg text-white placeholder-white/70 rounded-2xl outline-none border-b border-white/30 focus:border-white/50"
             aria-label="Type your idea"
           />
           {/* Bottom action bar: icons on left, Start button on right */}
