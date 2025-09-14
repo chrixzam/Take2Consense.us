@@ -7,6 +7,7 @@ import { User, GroupSession } from './types';
 import VersionBadge from './components/VersionBadge';
 import { generateSessionId } from './utils/sessionId';
 import { detectCity, forwardGeocodeCity } from './utils/geolocation';
+import Toast from './components/Toast';
 
 function App() {
   const [sessions, setSessions] = useState<GroupSession[]>([]);
@@ -17,6 +18,8 @@ function App() {
   const [currentUser] = useState<User>({ id: '1', name: 'You' });
   const [currentCity, setCurrentCity] = useState('San Francisco, CA');
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [userCountry, setUserCountry] = useState<string | undefined>(undefined);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Load sessions from localStorage
   useEffect(() => {
@@ -50,11 +53,12 @@ function App() {
     const cached = localStorage.getItem('userLocation');
     if (cached) {
       try {
-        const parsed = JSON.parse(cached) as { city: string; coords: { lat: number; lon: number }; ts: number };
+        const parsed = JSON.parse(cached) as { city: string; coords?: { lat: number; lon: number }; countryCode?: string; ts: number };
         // Use cached value if within 24h
         if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) {
           setCurrentCity(parsed.city);
-          setUserCoords(parsed.coords);
+          if (parsed.coords) setUserCoords(parsed.coords);
+          if (parsed.countryCode) setUserCountry(parsed.countryCode);
         }
       } catch {}
     }
@@ -64,11 +68,13 @@ function App() {
         if (result) {
           setCurrentCity(result.city);
           setUserCoords(result.coords);
+          setUserCountry(result.countryCode);
           localStorage.setItem(
             'userLocation',
-            JSON.stringify({ city: result.city, coords: result.coords, ts: Date.now() })
+            JSON.stringify({ city: result.city, coords: result.coords, countryCode: result.countryCode, ts: Date.now() })
           );
           localStorage.setItem('detectedLocation', 'true');
+          setToast(`Location set to ${result.city} • searching within 10km`);
         }
       })();
     }
@@ -213,28 +219,37 @@ function App() {
         onCreateNew={() => setShowCreateForm(true)}
         onJoinSession={() => setShowJoinForm(true)}
         userCoords={userCoords || undefined}
+        userCountry={userCountry}
         currentCity={currentCity}
         onCityChange={async (city) => {
           setCurrentCity(city);
           // Try to forward-geocode the city name to update coords
-          let coords = await forwardGeocodeCity(city);
+          let geocoded = await forwardGeocodeCity(city);
+          let coords = geocoded?.coords;
+          let country = geocoded?.countryCode;
           if (!coords) {
             // Fallback to cached or existing coords if geocoding fails
             const cached = localStorage.getItem('userLocation');
             if (cached) {
               try {
-                coords = JSON.parse(cached)?.coords || undefined;
+                const parsed = JSON.parse(cached);
+                coords = parsed?.coords || undefined;
+                country = parsed?.countryCode || country;
               } catch {}
             } else {
               coords = userCoords || undefined;
             }
           } else {
             setUserCoords(coords);
+            setUserCountry(country);
           }
-          localStorage.setItem('userLocation', JSON.stringify({ city, coords, ts: Date.now() }));
+          localStorage.setItem('userLocation', JSON.stringify({ city, coords, countryCode: country, ts: Date.now() }));
+          const radius = coords ? '10km' : '5mi';
+          setToast(`Location set to ${city} • searching within ${radius}`);
         }}
       />
       <VersionBadge />
+      <Toast message={toast} onClose={() => setToast(null)} duration={3000} />
     </>
   );
 }

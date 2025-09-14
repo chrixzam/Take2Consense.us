@@ -15,9 +15,10 @@ interface SessionListProps {
   userCoords?: Coords;
   currentCity: string;
   onCityChange: (city: string) => void;
+  userCountry?: string;
 }
 
-export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, userCoords, currentCity, onCityChange }: SessionListProps) {
+export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, userCoords, currentCity, onCityChange, userCountry }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -163,7 +164,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         {/* Events Feed (defaults to user's location if available) */}
         <EventsFeed 
           query="jazz"
-          country="US"
+          country={userCountry}
           category="concerts"
           locationAroundOrigin={userCoords ? `${userCoords.lat},${userCoords.lon}` : '40.782409,-73.971885'}
           locationAroundOffset={userCoords ? '10km' : '5mi'}
