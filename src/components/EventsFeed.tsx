@@ -121,7 +121,8 @@ export function EventsFeed({
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10">
+    <div className="w-full bg-gradient-to-b from-blue-50 via-purple-200 to-green-300 py-10">
+      <div className="max-w-4xl mx-auto">
       <div className="flex items-center mb-4">
         <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center mr-2">
           <Sparkles className="w-4 h-4 text-purple-600" />
@@ -217,6 +218,7 @@ export function EventsFeed({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
