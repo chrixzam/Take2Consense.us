@@ -64,90 +64,213 @@ export function EventsFeed({
 
   const canFetch = useMemo(() => Boolean(token && token.trim().length > 0), [token]);
 
-  // Mock events based on the provided image
-  const mockEvents: PredictHQEvent[] = [
-    {
-      id: 'mock-1',
-      title: 'Tech Career Fair: Exclusive Tech Hiring Event',
-      start: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-      category: 'conferences',
-      description: 'Connect with top tech companies and explore exclusive hiring opportunities',
-      place: { name: 'Moscone Center', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-2',
-      title: '#ProductCon San Francisco: The AI Conference for Product Leaders',
-      start: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
-      category: 'conferences',
-      description: 'Join product leaders discussing AI and the future of product management',
-      place: { name: 'SVN West', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-3',
-      title: 'San Francisco Career Fair',
-      start: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-      category: 'conferences',
-      description: 'Network with employers and discover new career opportunities',
-      place: { name: 'Marriott San Francisco', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-4',
-      title: 'DJ Lex - Favorite Cities TOUR',
-      start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-      category: 'concerts',
-      description: 'Electronic music experience with DJ Lex touring favorite cities',
-      place: { name: 'The Phoenix Hotel', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-5',
-      title: 'Sculpt by Clay: The Go-To Market Conference',
-      start: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now
-      category: 'conferences',
-      description: 'Learn go-to-market strategies from industry experts',
-      place: { name: '736 Mission St', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-6',
-      title: 'REAL BAD 36',
-      start: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days from now
-      category: 'sports',
-      description: 'High-energy dance and fitness event',
-      place: { name: '1015 Folsom', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-7',
-      title: 'SF Food & Wine Festival',
-      start: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days from now
-      category: 'festivals',
-      description: 'Taste the best of San Francisco cuisine and local wines',
-      place: { name: 'Golden Gate Park', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=250&fit=crop'
-    },
-    {
-      id: 'mock-8',
-      title: 'Bay Area Startup Pitch Night',
-      start: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 8 days from now
-      category: 'conferences',
-      description: 'Watch innovative startups pitch to investors and network with founders',
-      place: { name: 'The Battery SF', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }],
-      imageUrl: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=250&fit=crop'
-    }
-  ];
+  // Generate contextual mock events based on session context
+  const mockEvents: PredictHQEvent[] = useMemo(() => {
+    const sessionContext = (sessionName || '').toLowerCase();
+    const cityName = sessionCity || userStatedLocation || 'San Francisco';
+    
+    // Define event pools by context type
+    const eventPools = {
+      // Weekend/Adventure Events
+      weekend: [
+        {
+          id: 'mock-weekend-1',
+          title: 'Weekend Farmers Market & Local Food Tour',
+          start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'festivals',
+          description: 'Explore local produce and artisanal foods at the weekend farmers market',
+          place: { name: 'Ferry Building Marketplace', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-weekend-2',
+          title: 'Weekend Outdoor Movie Night',
+          start: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'festivals',
+          description: 'Watch classic films under the stars in a beautiful outdoor setting',
+          place: { name: 'Dolores Park', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1489599763123-a7ba3ba5c264?w=400&h=250&fit=crop'
+        }
+      ],
+      // Adventure/Outdoor Events
+      adventure: [
+        {
+          id: 'mock-adventure-1',
+          title: 'Urban Adventure Scavenger Hunt',
+          start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'sports',
+          description: 'Team-based scavenger hunt exploring hidden gems around the city',
+          place: { name: 'Union Square', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-adventure-2',
+          title: 'Kayaking & Water Sports Adventure',
+          start: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'sports',
+          description: 'Guided kayaking tour with equipment provided for all skill levels',
+          place: { name: 'Aquatic Cove', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=250&fit=crop'
+        }
+      ],
+      // Birthday/Celebration Events
+      birthday: [
+        {
+          id: 'mock-birthday-1',
+          title: 'Birthday Celebration Wine Tasting',
+          start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'festivals',
+          description: 'Private wine tasting experience perfect for birthday celebrations',
+          place: { name: 'Napa Valley Room', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-birthday-2',
+          title: 'Birthday Karaoke & Dance Party',
+          start: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'concerts',
+          description: 'Private karaoke rooms and dance floor for the ultimate birthday bash',
+          place: { name: 'The Mint Karaoke Lounge', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=250&fit=crop'
+        }
+      ],
+      // Team/Work Events
+      team: [
+        {
+          id: 'mock-team-1',
+          title: 'Team Building Escape Room Challenge',
+          start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'conferences',
+          description: 'Collaborative puzzle-solving experience designed for team building',
+          place: { name: 'EscapeSF', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-team-2',
+          title: 'Corporate Cooking Team Challenge',
+          start: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'conferences',
+          description: 'Learn to cook together as a team with professional chef guidance',
+          place: { name: 'CulinaryArts Studio', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop'
+        }
+      ],
+      // Food/Dining Events
+      food: [
+        {
+          id: 'mock-food-1',
+          title: 'Artisanal Food & Craft Beer Pairing',
+          start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'festivals',
+          description: 'Curated tasting of local artisanal foods paired with craft beers',
+          place: { name: 'Local Brewing Co.', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-food-2',
+          title: 'International Street Food Festival',
+          start: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'festivals',
+          description: 'Sample authentic street food from around the world in one location',
+          place: { name: 'Mission District', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=250&fit=crop'
+        }
+      ],
+      // Music/Concert Events
+      music: [
+        {
+          id: 'mock-music-1',
+          title: 'Local Jazz & Blues Night',
+          start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'concerts',
+          description: 'Intimate evening with local jazz and blues musicians',
+          place: { name: 'The Blue Note', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-music-2',
+          title: 'Acoustic Singer-Songwriter Showcase',
+          start: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'concerts',
+          description: 'Discover emerging acoustic artists in an intimate venue setting',
+          place: { name: 'The Independent', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop'
+        }
+      ],
+      // Default/General Events
+      default: [
+        {
+          id: 'mock-default-1',
+          title: 'Tech Career Fair: Exclusive Tech Hiring Event',
+          start: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'conferences',
+          description: 'Connect with top tech companies and explore exclusive hiring opportunities',
+          place: { name: 'Moscone Center', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-default-2',
+          title: '#ProductCon: The AI Conference for Product Leaders',
+          start: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'conferences',
+          description: 'Join product leaders discussing AI and the future of product management',
+          place: { name: 'SVN West', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=250&fit=crop'
+        },
+        {
+          id: 'mock-default-3',
+          title: 'Local Art & Culture Walking Tour',
+          start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'festivals',
+          description: 'Explore local art installations and cultural landmarks with expert guides',
+          place: { name: 'Arts District', type: 'venue' },
+          entities: [{ name: cityName, type: 'venue' }],
+          imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop'
+        }
+      ]
+    };
 
+    // Determine which event pool to use based on session context
+    let selectedEvents: PredictHQEvent[] = [];
+    
+    if (sessionContext.includes('weekend')) {
+      selectedEvents = [...eventPools.weekend, ...eventPools.default];
+    } else if (sessionContext.includes('adventure') || sessionContext.includes('outdoor')) {
+      selectedEvents = [...eventPools.adventure, ...eventPools.default];
+    } else if (sessionContext.includes('birthday') || sessionContext.includes('celebration') || sessionContext.includes('party')) {
+      selectedEvents = [...eventPools.birthday, ...eventPools.music, ...eventPools.food];
+    } else if (sessionContext.includes('team') || sessionContext.includes('work') || sessionContext.includes('corporate') || sessionContext.includes('outing')) {
+      selectedEvents = [...eventPools.team, ...eventPools.food, ...eventPools.default];
+    } else if (sessionContext.includes('food') || sessionContext.includes('dining') || sessionContext.includes('restaurant')) {
+      selectedEvents = [...eventPools.food, ...eventPools.default];
+    } else if (sessionContext.includes('music') || sessionContext.includes('concert') || sessionContext.includes('band')) {
+      selectedEvents = [...eventPools.music, ...eventPools.default];
+    } else {
+      // Mix of various event types for general sessions
+      selectedEvents = [
+        ...eventPools.default,
+        eventPools.food[0],
+        eventPools.music[0],
+        eventPools.weekend[0]
+      ];
+    }
+
+    return selectedEvents.slice(0, 8); // Limit to 8 events
+  }, [sessionName, sessionCity, userStatedLocation]);
   // Smart date filtering based on session dates
   const smartDateFilters = useMemo(() => {
     const filters: { activeGte?: string; activeLte?: string } = {};
