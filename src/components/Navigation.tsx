@@ -71,6 +71,21 @@ export function Navigation({
 
             {/* Right section */}
             <div className="flex items-center space-x-3">
+              {/* Demo Link */}
+              {window.location.pathname !== '/demo' && (
+                <a
+                  href="/demo"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.history.pushState({}, '', '/demo');
+                    window.location.reload();
+                  }}
+                  className="px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  Try Demo
+                </a>
+              )}
+              
               {/* Current Location Display */}
               <div className="flex items-center space-x-2">
                 <button
