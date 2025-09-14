@@ -34,17 +34,20 @@ type EventsFeedProps = {
 function resolveToken(propToken?: string): string | null {
   // Priority: prop -> env -> localStorage -> URL param `eventbrite_token`
   const envToken = (import.meta as any).env?.VITE_EVENTBRITE_TOKEN as string | undefined;
+  const globalToken = typeof window !== 'undefined' ? (window as any).EVENTBRITE_TOKEN : null;
   const lsToken = typeof window !== 'undefined' ? localStorage.getItem('eventbrite_token') : null;
   const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('eventbrite_token') : null;
-  return propToken || envToken || lsToken || urlToken || null;
+  return propToken || envToken || globalToken || lsToken || urlToken || null;
 }
 
 function detectTokenSource(propToken?: string): string | null {
   const envToken = (import.meta as any).env?.VITE_EVENTBRITE_TOKEN as string | undefined;
+  const globalToken = typeof window !== 'undefined' ? (window as any).EVENTBRITE_TOKEN : null;
   const lsToken = typeof window !== 'undefined' ? localStorage.getItem('eventbrite_token') : null;
   const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('eventbrite_token') : null;
   if (propToken) return 'prop';
   if (envToken) return 'env';
+  if (globalToken) return 'global';
   if (lsToken) return 'localStorage';
   if (urlToken) return 'url';
   return null;
@@ -170,9 +173,7 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
         <h2 className="text-xl font-semibold text-gray-900">Upcoming Events</h2>
         <div className="text-sm text-gray-500">
           Powered by Eventbrite
-          {hasToken && tokenSource && (
-            <span className="ml-2 text-xs text-gray-400">(token: {tokenSource})</span>
-          )}
+          <span className="ml-2 text-xs text-gray-400">(token: {tokenSource || 'none'})</span>
         </div>
       </div>
 
