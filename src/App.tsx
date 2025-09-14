@@ -21,6 +21,8 @@ function App() {
     if (savedSessions) {
       const parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
         ...session,
+        // Migrate existing sessions to have shareId if missing
+        shareId: session.shareId || generateSessionId(),
         createdAt: new Date(session.createdAt),
         updatedAt: new Date(session.updatedAt),
         events: session.events.map((event: any) => ({
