@@ -51,7 +51,7 @@ export function SessionCreationForm({ onCreateSession, onCancel, currentCity }: 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+      <Navigation onLogoClick={onCancel} />
       
       <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8">

@@ -268,6 +268,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
       <Navigation
         showBackButton
         onBack={onBack}
+        onLogoClick={onBack}
         sessionName={session.name}
         memberCount={session.members.length}
         currentCity={session.city}

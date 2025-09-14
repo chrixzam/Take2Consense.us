@@ -6,6 +6,7 @@ interface NavigationProps {
   // Main app navigation
   showBackButton?: boolean;
   onBack?: () => void;
+  onLogoClick?: () => void;
   
   // Session-specific props
   sessionName?: string;
@@ -20,6 +21,7 @@ interface NavigationProps {
 export function Navigation({ 
   showBackButton = false,
   onBack,
+  onLogoClick,
   sessionName,
   memberCount,
   currentCity,
@@ -34,7 +36,13 @@ export function Navigation({
             {/* Left section */}
             <div className="flex items-center space-x-4">
               {/* Brand */}
-              <div className="flex items-center space-x-3">
+              <a
+                href="/"
+                onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
+                className="flex items-center space-x-3 hover:opacity-90 transition-opacity"
+                aria-label="Go to home"
+                title="Go to home"
+              >
                 <Logo size={40} />
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -44,7 +52,7 @@ export function Navigation({
                     <p className="text-sm text-gray-500 -mt-1">{sessionName}</p>
                   )}
                 </div>
-              </div>
+              </a>
 
               {/* Session info */}
               {sessionName && memberCount && (
