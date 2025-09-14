@@ -106,33 +106,6 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Create New Session Card */}
-          <button
-            onClick={onCreateNew}
-            className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-blue-300 hover:bg-blue-50 transition-all group"
-          >
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                <Plus className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">New Session</h3>
-              <p className="text-gray-500 text-sm">Start planning with your group</p>
-            </div>
-          </button>
-
-          {/* Join Session Card */}
-          <button
-            onClick={onJoinSession}
-            className="bg-white border-2 border-dashed border-green-200 rounded-2xl p-8 hover:border-green-300 hover:bg-green-50 transition-all group"
-          >
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 group-hover:bg-green-200 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                <UserPlus className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Join Session</h3>
-              <p className="text-gray-500 text-sm">Use a session ID to join planning</p>
-            </div>
-          </button>
           {/* Session Cards */}
           {sessions.map(session => (
             <div
