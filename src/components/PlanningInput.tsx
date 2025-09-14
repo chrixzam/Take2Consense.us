@@ -153,6 +153,9 @@ export function PlanningInput({
         ? autoDetectedLocation.label
         : (ideaLoc || currentCity);
 
+      console.log('Planning with coordinates:', coordsForPlanning);
+      console.log('Planning for city:', cityForPlanning);
+      
       const res = await planWithAgent(
         ideaText.trim(),
         'planner',
@@ -163,6 +166,8 @@ export function PlanningInput({
         selectedStartDate,
         selectedEndDate,
       );
+      
+      console.log('Plan result:', res);
       setPlanText(res.text);
       setPlanModel(res.model);
       setPlanProvider(res.provider);
@@ -171,7 +176,8 @@ export function PlanningInput({
       setSelectedPlanEvents([]);
       setPlanModalOpen(true);
     } catch (e) {
-      setPlanError('Failed to get a plan.');
+      console.error('Planning error:', e);
+      setPlanError(`Failed to get a plan: ${e instanceof Error ? e.message : 'Unknown error'}`);
     } finally {
       setPlanning(false);
     }

@@ -376,7 +376,26 @@ export async function planWithAgent(
   }
 
   // Local fallback: keep left column minimal; suggestions remain on the right.
-  const fallback = `Draft prepared for "${idea}".`;
+  let fallback = `Here's a planning draft for "${idea}":
+
+**Quick Ideas:**
+1. Research activities and venues in the area
+2. Check availability and pricing
+3. Plan transportation between locations
+4. Consider timing and weather
+
+*Note: Set VITE_ANTHROPIC_API_KEY in your .env.local file to get AI-powered suggestions from Claude.*`;
+
+  // Add context about nearby places if available
+  if (nearby.length > 0) {
+    fallback += `\n\n**Nearby Options Found:**\n${nearby.slice(0, 3).map(p => `• ${p.name} (${p.type.replace('_', ' ')}) - ${p.distKm.toFixed(1)}km away`).join('\n')}`;
+  }
+  
+  // Add context about events if available
+  if (events.length > 0) {
+    fallback += `\n\n**Upcoming Events:**\n${events.slice(0, 2).map(e => `• ${e.title}${e.place ? ` at ${e.place}` : ''}`).join('\n')}`;
+  }
+
   return { text: fallback, model, provider, source: 'local', places: nearby, events };
 }
 
@@ -519,7 +538,15 @@ Please provide specific booking instructions, contact information, and reservati
   }
 
   // Local fallback with basic booking guidance
-  const fallback = `Here's a planning draft for "${idea}":
+  const placesSection = places.length > 0 
+    ? `**Venues to book:**\n${places.map(p => `• ${p.name} - Visit ${p.url} or search online for contact info`).join('\n')}\n\n`
+    : '';
+  
+  const eventsSection = events.length > 0
+    ? `**Events to attend:**\n${events.map(e => `• ${e.title} - Check ${e.url} for tickets`).join('\n')}\n\n`
+    : '';
+    
+  const fallback = `Here's a planning draft for "${planText.split('\n')[0] || 'your request'}":
 
 **Quick Plan:**
 1. Research and book main activities/venues
@@ -527,13 +554,13 @@ Please provide specific booking instructions, contact information, and reservati
 3. Make reservations where needed
 4. Prepare backup options
 
-*Note: Set VITE_ANTHROPIC_API_KEY in your .env.local file to get AI-powered suggestions from Claude.*`;
-
-${places.length > 0 ? `**Venues to book:**\n${places.map(p => `• ${p.name} - Visit ${p.url} or search online for contact info`).join('\n')}\n\n` : ''}${events.length > 0 ? `**Events to attend:**\n${events.map(e => `• ${e.title} - Check ${e.url} for tickets`).join('\n')}\n\n` : ''}**General booking tips:**
+${placesSection}${eventsSection}**General booking tips:**
 • Book restaurants 1-2 weeks in advance
 • Check cancellation policies
 • Confirm reservations 24 hours before
-• Have backup options ready`;
+• Have backup options ready
+
+*Note: Set VITE_ANTHROPIC_API_KEY in your .env.local file to get AI-powered suggestions from Claude.*`;
 
   return { text: fallback, model, provider, source: 'local', places, events };
 }
