@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, MapPin, DollarSign, Clock, User, Heart, X, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, User, ThumbsUp, X, Trash2 } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventDetailsModalProps {
@@ -118,11 +118,14 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
             onClick={() => onVote(event.id)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
               hasVoted
-                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-red-600'
+                ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-green-600'
             }`}
+            aria-pressed={hasVoted}
+            aria-label={hasVoted ? 'Remove upvote' : 'Upvote'}
+            title={hasVoted ? 'Remove upvote' : 'Upvote'}
           >
-            <Heart className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`} />
+            <ThumbsUp className={`w-4 h-4 ${hasVoted ? 'text-green-600' : ''}`} />
             <span>{hasVoted ? 'Voted' : 'Vote'}</span>
           </button>
         </div>

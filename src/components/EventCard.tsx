@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, DollarSign, Clock, Calendar, ThumbsUp, Trash2, ExternalLink } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Calendar, ThumbsUp, Trash2 } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventCardProps {
@@ -106,29 +106,7 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.Other}`}>
               {event.category}
             </span>
-            {event.sourceUrl && (
-              <a
-                href={event.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                title="Open link"
-                className="inline-flex items-center text-gray-500 hover:text-blue-600"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            )}
           </div>
-          {event.sourceUrl && (
-            <div className="ml-2 flex items-center space-x-2 text-xs text-gray-500">
-              {event.linkFaviconUrl && (
-                <img src={event.linkFaviconUrl} alt="favicon" className="w-3 h-3 rounded-sm" />
-              )}
-              <span className="truncate max-w-[10rem]">
-                {event.linkSiteName || (() => { try { return new URL(event.sourceUrl!).hostname; } catch { return 'link'; } })()}
-              </span>
-            </div>
-          )}
           <button
             onClick={(e) => { e.stopPropagation(); onVote(event.id); }}
             className="group flex items-center px-3 py-2 rounded-lg transition-colors hover:bg-gray-100"
