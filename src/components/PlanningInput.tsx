@@ -101,6 +101,8 @@ export function PlanningInput({
     try {
       // Extract idea-mentioned location regardless, to detect conflicts.
       const ideaLocAll = extractLocationFromIdea(ideaText.trim());
+      
+      console.log('Starting planning with Claude for idea:', ideaText);
 
       // If user selected an explicit location filter, it wins.
       // Otherwise, try to infer a location from the text (heuristic),

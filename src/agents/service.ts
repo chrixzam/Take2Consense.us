@@ -342,13 +342,16 @@ export async function planWithAgent(
           events,
         };
       }
+      console.log('API endpoint failed:', res.status, res.statusText);
     } catch (_) {
       // fall through to direct provider call
+      console.log('API endpoint error, falling back to direct Anthropic call');
     }
   }
 
   const anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
   if (anthropicKey) {
+    console.log('Using direct Anthropic API call');
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -501,13 +504,30 @@ Please provide specific booking instructions, contact information, and reservati
       if (response.ok) {
         const data: any = await response.json();
         const text = data?.content?.[0]?.text || JSON.stringify(data);
+        console.log('Claude response received:', text.substring(0, 100) + '...');
         return { text, model, provider, source: 'anthropic', places, events };
+      } else {
+        console.error('Anthropic API error:', response.status, response.statusText);
+        const errorText = await response.text().catch(() => '');
+        console.error('Error details:', errorText);
       }
-    } catch (_) {}
+    } catch (error) {
+      console.error('Anthropic API call failed:', error);
+    }
+  } else {
+    console.log('No VITE_ANTHROPIC_API_KEY found, using local fallback');
   }
 
   // Local fallback with basic booking guidance
-  const fallback = `Booking guidance for your plan:
+  const fallback = `Here's a planning draft for "${idea}":
+
+**Quick Plan:**
+1. Research and book main activities/venues
+2. Plan transportation and timing
+3. Make reservations where needed
+4. Prepare backup options
+
+*Note: Set VITE_ANTHROPIC_API_KEY in your .env.local file to get AI-powered suggestions from Claude.*`;
 
 ${places.length > 0 ? `**Venues to book:**\n${places.map(p => `• ${p.name} - Visit ${p.url} or search online for contact info`).join('\n')}\n\n` : ''}${events.length > 0 ? `**Events to attend:**\n${events.map(e => `• ${e.title} - Check ${e.url} for tickets`).join('\n')}\n\n` : ''}**General booking tips:**
 • Book restaurants 1-2 weeks in advance
