@@ -117,6 +117,30 @@ export function EventsFeed({ token, limit = 6, organizationId, city }: EventsFee
       setError(null);
       setDebug(null);
       try {
+        // 0) If a city is specified, try public search first (broader results)
+        if (resolvedCity) {
+          try {
+            const nowIso = new Date().toISOString();
+            const sq = new URLSearchParams({
+              'location.address': resolvedCity,
+              'location.within': '25mi',
+              'start_date.range_start': nowIso,
+              expand: 'venue,logo',
+              sort_by: 'date',
+            });
+            let data: any = await fetchJSON(`${base}/events/search/?${sq.toString()}`, resolvedToken, controller.signal);
+            const sItems = Array.isArray(data?.events) ? data.events : [];
+            const sFiltered = applyCityFilter(sItems);
+            if (sFiltered.length > 0) {
+              setEvents(sFiltered);
+              return;
+            }
+            setDebug('search returned no results; trying user/org endpoints.');
+          } catch (err: any) {
+            setDebug(`search failed: ${err.message}; trying user/org.`);
+          }
+        }
+
         // 1) Try users/me/owned_events
         const q = new URLSearchParams({ status: 'live,started', order_by: 'start_asc', expand: 'venue,logo' });
         let data: any = null;
