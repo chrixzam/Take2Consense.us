@@ -32,7 +32,7 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
 
   return (
     <div
-      className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 overflow-hidden group hover:shadow-md cursor-pointer"
+      className="bg-white/90 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 overflow-hidden group hover:shadow-md cursor-pointer"
       onClick={() => onOpen?.(event)}
       role={onOpen ? 'button' : undefined}
       tabIndex={onOpen ? 0 : undefined}

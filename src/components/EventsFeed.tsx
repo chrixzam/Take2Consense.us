@@ -141,7 +141,7 @@ export function EventsFeed({
       )}
 
       {canFetch && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+        <div className="bg-white/90 rounded-2xl shadow-sm border border-gray-200">
           {loading ? (
             <div className="p-6 text-sm text-gray-600">Loading events…</div>
           ) : error ? (
