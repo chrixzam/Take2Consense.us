@@ -266,9 +266,6 @@ export function EventsFeed({
           {locationContext && (
             <span>• Location: {locationContext}</span>
           )}
-          {locationAroundOrigin && (
-            <span>• Geo: {locationAroundOrigin} ({locationAroundOffset || '10km'})</span>
-          )}
           {sessionStartDate && (
             <span>
               • Session dates: {sessionStartDate.toLocaleDateString()}
