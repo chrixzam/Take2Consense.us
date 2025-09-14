@@ -133,17 +133,55 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          {/* Session Description */}
-          {session.description && (
-            <div className="bg-blue-50 rounded-2xl p-6">
-              <p className="text-blue-800 text-center">{session.description}</p>
+          {/* Session Context Header */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl">
+                  <Sparkles className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{session.name}</h1>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                    <div className="flex items-center space-x-1">
+                      <Users className="w-4 h-4" />
+                      <span>{session.members.length} members</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="w-4 h-4" />
+                      <span>{session.city}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{session.events.length} event ideas</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {session.members.map((member, index) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full text-xs font-medium text-gray-700"
+                    title={member.name}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+            {session.description && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-gray-600">{session.description}</p>
+              </div>
+            )}
+          </div>
 
           {/* Idea Submission */}
           <IdeaSubmissionForm
             onSubmit={handleAddIdea}
             currentCity={session.city}
+            sessionName={session.name}
           />
 
           {/* View Toggle */}

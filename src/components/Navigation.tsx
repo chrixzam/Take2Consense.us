@@ -67,6 +67,19 @@ export function Navigation({
 
           {/* Right section */}
           <div className="flex items-center space-x-3">
+            {/* Breadcrumb for session context */}
+            {sessionName && (
+              <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+                <span>Planning:</span>
+                <span className="font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded-lg">
+                  {sessionName}
+                </span>
+                {memberCount && (
+                  <span className="text-gray-500">• {memberCount} members</span>
+                )}
+              </div>
+            )}
+
             {currentCity && onCityEdit && (
               <button
                 onClick={onCityEdit}
@@ -79,19 +92,9 @@ export function Navigation({
             
             {onSettings && (
               <button
-                onClick={onSettings}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Settings"
               >
                 <Settings className="w-5 h-5" />
               </button>
-            )}
-
-            {/* User avatar placeholder */}
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-blue-600">Y</span>
-            </div>
-          </div>
         </div>
       </div>
     </nav>

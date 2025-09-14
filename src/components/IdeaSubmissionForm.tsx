@@ -12,9 +12,10 @@ interface IdeaSubmissionFormProps {
     suggestedBy: string;
   }) => void;
   currentCity: string;
+  sessionName: string;
 }
 
-export function IdeaSubmissionForm({ onSubmit, currentCity }: IdeaSubmissionFormProps) {
+export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName }: IdeaSubmissionFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -59,15 +60,15 @@ export function IdeaSubmissionForm({ onSubmit, currentCity }: IdeaSubmissionForm
               <Plus className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-lg font-medium text-gray-900">Propose an idea</p>
-              <p className="text-sm text-gray-500">Share your suggestion with the group</p>
+              <p className="text-lg font-medium text-gray-900">Propose an idea for {sessionName}</p>
+              <p className="text-sm text-gray-500">Share your suggestion with this planning session</p>
             </div>
           </div>
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">New Event Idea</h3>
+            <h3 className="text-lg font-semibold text-gray-900">New Idea for {sessionName}</h3>
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
