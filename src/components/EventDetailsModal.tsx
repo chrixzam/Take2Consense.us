@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, MapPin, DollarSign, Clock, User, ThumbsUp, X, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, ThumbsUp, X, Trash2 } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventDetailsModalProps {
@@ -99,10 +99,6 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-gray-400" />
               <span>{event.duration}h</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-400" />
-              <span>{event.votes} votes</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
