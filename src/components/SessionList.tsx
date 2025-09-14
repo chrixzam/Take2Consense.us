@@ -98,10 +98,27 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
               >
                 {planning ? 'Planning…' : 'Start planning'}
               </button>
-            </div>
+          </div>
             {planError && (
               <div className="text-left text-sm text-red-600 mt-2 px-2">{planError}</div>
             )}
+            {/* Quick actions under idea input */}
+            <div className="mt-4 flex items-center justify-center space-x-3">
+              <button
+                onClick={onCreateNew}
+                className="inline-flex items-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create Session</span>
+              </button>
+              <button
+                onClick={onJoinSession}
+                className="inline-flex items-center space-x-2 bg-green-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-green-700 transition-colors"
+              >
+                <UserPlus className="w-5 h-5" />
+                <span>Join Session</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -189,22 +206,6 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
             <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No sessions yet</h3>
             <p className="mb-6">Create your first planning session to get started</p>
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-              <button
-                onClick={onCreateNew}
-                className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Create Session</span>
-              </button>
-              <button
-                onClick={onJoinSession}
-                className="inline-flex items-center space-x-2 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700 transition-colors"
-              >
-                <UserPlus className="w-5 h-5" />
-                <span>Join Session</span>
-              </button>
-            </div>
           </div>
         )}
 
