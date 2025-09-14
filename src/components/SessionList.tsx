@@ -5,6 +5,8 @@ import { EventsFeed } from './EventsFeed';
 import { GroupSession } from '../types';
 import type { FeedEvent } from '../types';
 import { CitySelector } from './CitySelector';
+import AgentPlanModal from './AgentPlanModal';
+import { planWithAgent } from '../agents/service';
 
 type Coords = { lat: number; lon: number };
 
@@ -25,6 +27,12 @@ interface SessionListProps {
 export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed, onOpenProfile }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const [ideaText, setIdeaText] = useState('');
+  const [planning, setPlanning] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [planText, setPlanText] = useState('');
+  const [planModel, setPlanModel] = useState<string | undefined>(undefined);
+  const [planProvider, setPlanProvider] = useState<string | undefined>(undefined);
+  const [planError, setPlanError] = useState<string | null>(null);
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffTime = now.getTime() - new Date(date).getTime();
@@ -66,12 +74,34 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
               />
               <button
                 type="button"
-                onClick={onCreateNew}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-medium shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                onClick={async () => {
+                  setPlanError(null);
+                  if (!ideaText.trim()) {
+                    setPlanError('Please enter an idea to plan.');
+                    return;
+                  }
+                  setPlanning(true);
+                  try {
+                    const res = await planWithAgent(ideaText.trim(), 'planner');
+                    setPlanText(res.text);
+                    setPlanModel(res.model);
+                    setPlanProvider(res.provider);
+                    setPlanModalOpen(true);
+                  } catch (e) {
+                    setPlanError('Failed to get a plan.');
+                  } finally {
+                    setPlanning(false);
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-medium shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 disabled:opacity-60"
+                disabled={planning}
               >
-                Start planning
+                {planning ? 'Planning…' : 'Start planning'}
               </button>
             </div>
+            {planError && (
+              <div className="text-left text-sm text-red-600 mt-2 px-2">{planError}</div>
+            )}
           </div>
         </div>
 
@@ -221,6 +251,14 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           isOpen={showCitySelector}
         />
       </div>
+      <AgentPlanModal
+        open={planModalOpen}
+        onClose={() => setPlanModalOpen(false)}
+        idea={ideaText}
+        planText={planText}
+        model={planModel}
+        provider={planProvider}
+      />
     </div>
     </div>
   );
