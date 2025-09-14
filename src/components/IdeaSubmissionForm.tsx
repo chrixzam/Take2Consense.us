@@ -13,9 +13,10 @@ interface IdeaSubmissionFormProps {
   }) => void;
   currentCity: string;
   sessionName: string;
+  onOpenRandom?: () => void;
 }
 
-export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName }: IdeaSubmissionFormProps) {
+export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenRandom }: IdeaSubmissionFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -51,31 +52,55 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName }: IdeaS
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ease-out">
       {!isExpanded ? (
-        <button
-          onClick={() => setIsExpanded(true)}
-          className="w-full p-6 text-left hover:bg-gray-50 transition-colors group"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 group-hover:bg-blue-200 rounded-xl transition-colors">
-              <Plus className="w-5 h-5 text-blue-600" />
+        <div>
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="w-full p-6 text-left hover:bg-gray-50 transition-colors group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 group-hover:bg-blue-200 rounded-xl transition-colors">
+                <Plus className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-lg font-medium text-gray-900">Propose an idea for {sessionName}</p>
+                <p className="text-sm text-gray-500">Share your suggestion with this planning session</p>
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-medium text-gray-900">Propose an idea for {sessionName}</p>
-              <p className="text-sm text-gray-500">Share your suggestion with this planning session</p>
+          </button>
+          {onOpenRandom && (
+            <div className="px-6 pb-4 -mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={onOpenRandom}
+                className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg"
+              >
+                Pick Random
+              </button>
             </div>
-          </div>
-        </button>
+          )}
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-semibold text-gray-900">New Idea for {sessionName}</h3>
-            <button
-              type="button"
-              onClick={() => setIsExpanded(false)}
-              className="text-gray-400 hover:text-gray-600 text-sm font-medium"
-            >
-              Cancel
-            </button>
+            <div className="flex items-center gap-2">
+              {onOpenRandom && (
+                <button
+                  type="button"
+                  onClick={onOpenRandom}
+                  className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg"
+                >
+                  Random Picker
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                className="text-gray-400 hover:text-gray-600 text-sm font-medium"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
 
           <div>

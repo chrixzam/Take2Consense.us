@@ -8,7 +8,7 @@ import { CitySelector } from './CitySelector';
 import { ShareSessionModal } from './ShareSessionModal';
 import { EventIdea, User, GroupSession } from '../types';
 import { categorizeEvent } from '../utils/eventCategories';
-import { Calendar, Grid3X3, Shuffle, Sparkles, Users, MapPin, Share2 } from 'lucide-react';
+import { Calendar, Grid3X3, Sparkles, Users, MapPin, Share2 } from 'lucide-react';
 
 interface SessionViewProps {
   session: GroupSession;
@@ -108,17 +108,6 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
         <Calendar className="w-4 h-4" />
         <span>Calendar</span>
       </button>
-      <button
-        onClick={() => setActiveView('random')}
-        className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-          activeView === 'random' 
-            ? 'bg-white text-gray-900 shadow-sm' 
-            : 'text-gray-600 hover:text-gray-900'
-        }`}
-      >
-        <Shuffle className="w-4 h-4" />
-        <span>Random</span>
-      </button>
     </div>
   );
 
@@ -191,6 +180,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
             onSubmit={handleAddIdea}
             currentCity={session.city}
             sessionName={session.name}
+            onOpenRandom={() => setActiveView('random')}
           />
 
           {/* View Toggle */}
