@@ -14,6 +14,17 @@ interface EventDetailsModalProps {
 export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, onVote }: EventDetailsModalProps) {
   if (!isOpen || !event) return null;
 
+  const getDomain = (url?: string) => {
+    if (!url) return '';
+    try {
+      const normalized = /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
+      const hostname = new URL(normalized).hostname;
+      return hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  };
+
   const formatDateLong = (date: Date) => {
     try {
       return new Intl.DateTimeFormat('en-US', {
@@ -62,7 +73,7 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
                 rel="noopener noreferrer"
                 className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg"
               >
-                Open Link
+                {getDomain(event.sourceUrl)}
               </a>
             </div>
           )}
