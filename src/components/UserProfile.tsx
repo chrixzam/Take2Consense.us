@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigation } from './Navigation';
 import { User } from '../types';
-import { Camera, User2 } from 'lucide-react';
+import { Camera, Upload, User2 } from 'lucide-react';
 
 interface UserProfileProps {
   user: User;
@@ -13,6 +13,7 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setName(user.name);
@@ -23,6 +24,54 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
     const updated: User = { ...user, name: name.trim() || 'You', avatar: avatar.trim() || undefined };
     onUpdateUser(updated);
     onBack();
+  };
+
+  async function fileToDataUrl(file: File): Promise<string> {
+    // Resize large images to max 512px to keep localStorage small
+    const load = (f: File) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = reader.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+
+    const img = await load(file);
+    const maxDim = 512;
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+    ctx.drawImage(img, 0, 0, w, h);
+    // Use JPEG to keep size small
+    return canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPreviewError(null);
+    if (!file.type.startsWith('image/')) {
+      setPreviewError('Please select an image file');
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setAvatar(dataUrl);
+    } catch (err) {
+      setPreviewError('Could not process the image');
+    } finally {
+      // reset input so the same file can be chosen again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const AvatarPreview = () => (
@@ -58,30 +107,49 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
               <AvatarPreview />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-                <div className="flex items-center space-x-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="url"
-                      placeholder="https://example.com/me.jpg"
-                      value={avatar}
-                      onChange={(e) => setAvatar(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <Camera className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
-                  </div>
-                  {avatar && (
-                    <button
-                      className="text-sm text-gray-600 hover:text-gray-800"
-                      onClick={() => { setAvatar(''); setPreviewError(null); }}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                {previewError && (
-                  <p className="text-sm text-red-600 mt-1">{previewError}</p>
-                )}
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1">
+                <input
+                  type="url"
+                  placeholder="https://example.com/me.jpg"
+                  value={avatar}
+                  onChange={(e) => setAvatar(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Camera className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center space-x-1 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                title="Upload photo"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload</span>
+              </button>
+              {avatar && (
+                <button
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                  onClick={() => { setAvatar(''); setPreviewError(null); }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {previewError && (
+              <p className="text-sm text-red-600 mt-1">{previewError}</p>
+            )}
+            {!previewError && (
+              <p className="text-xs text-gray-500 mt-1">You can paste an image URL or upload a photo. Images are resized to 512px for storage.</p>
+            )}
+          </div>
             </div>
 
             {/* Name */}
