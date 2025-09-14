@@ -101,7 +101,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
                         onDeleteSession(session.id);
                       }
                     }}
-                    className="ml-3 text-gray-400 hover:text-red-600 transition-colors"
+                    className="ml-3 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                     title="Delete session"
                     aria-label="Delete session"
                   >
