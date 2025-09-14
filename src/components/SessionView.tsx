@@ -366,11 +366,6 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                 )}
               </div>
             </div>
-            {session.description && (
-              <div className="mt-2">
-                <p className="text-gray-600">{session.description}</p>
-              </div>
-            )}
           </div>
 
           {/* Idea Submission */}
