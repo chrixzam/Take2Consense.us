@@ -28,6 +28,17 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
     }
   };
 
+  const categoryColors: Record<string, string> = {
+    'Food & Dining': 'bg-orange-100 text-orange-800',
+    'Entertainment': 'bg-purple-100 text-purple-800',
+    'Outdoor': 'bg-green-100 text-green-800',
+    'Culture': 'bg-blue-100 text-blue-800',
+    'Sports': 'bg-red-100 text-red-800',
+    'Shopping': 'bg-pink-100 text-pink-800',
+    'Social': 'bg-yellow-100 text-yellow-800',
+    'Other': 'bg-gray-100 text-gray-800'
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -89,7 +100,7 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
               <span>{event.duration}h</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[event.category] || categoryColors['Other']}`}>
                 {event.category}
               </span>
             </div>

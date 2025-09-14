@@ -32,6 +32,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
   const [sessionCoords, setSessionCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [sessionCountry, setSessionCountry] = useState<string | undefined>(undefined);
   const [selectedEvent, setSelectedEvent] = useState<EventIdea | null>(null);
+  const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
 
   // Geocode the session city to use in the EventsFeed
   React.useEffect(() => {
@@ -412,6 +413,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
             locationAroundOrigin={sessionCoords ? `${sessionCoords.lat},${sessionCoords.lon}` : undefined}
             locationAroundOffset={sessionCoords ? '10km' : undefined}
             onAddFromFeed={handleAddFromFeed}
+            onLoadedEvents={(evs) => setFeedEvents(evs)}
           />
         </div>
       </main>
@@ -455,7 +457,11 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
               </button>
             </div>
             <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50">
-              <RandomSuggestion events={session.events} />
+              <RandomSuggestion
+                events={session.events}
+                feedEvents={feedEvents}
+                onAddFromFeed={handleAddFromFeed}
+              />
             </div>
           </div>
         </div>

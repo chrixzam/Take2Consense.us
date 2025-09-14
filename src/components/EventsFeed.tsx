@@ -25,6 +25,7 @@ interface EventsFeedProps {
   locationAroundOrigin?: string; // "lat,lon"
   locationAroundOffset?: string; // e.g. "5mi" or "10km"
   onAddFromFeed?: (ev: FeedEvent) => void;
+  onLoadedEvents?: (events: FeedEvent[]) => void;
 }
 
 export function EventsFeed({
@@ -38,6 +39,7 @@ export function EventsFeed({
   locationAroundOrigin,
   locationAroundOffset,
   onAddFromFeed,
+  onLoadedEvents,
 }: EventsFeedProps) {
   const envToken = import.meta.env.VITE_PREDICTHQ_TOKEN as string | undefined;
   // Fallback token is hardcoded for local usage. Avoid committing secrets in production.
@@ -85,6 +87,26 @@ export function EventsFeed({
         const data = await res.json();
         const results = Array.isArray(data?.results) ? data.results : [];
         if (alive) setEvents(results);
+        // Notify parent with normalized feed events when available
+        if (alive && onLoadedEvents) {
+          const normalized: FeedEvent[] = results.map((ev: PredictHQEvent) => {
+            const searchQuery = encodeURIComponent([
+              ev.title,
+              ev.place?.name || ev.entities?.[0]?.name,
+            ].filter(Boolean).join(' '));
+            const sourceUrl = `https://www.google.com/search?q=${searchQuery}`;
+            return {
+              title: ev.title || 'Untitled event',
+              description: ev.description,
+              category: ev.category,
+              start: ev.start,
+              end: ev.end,
+              locationName: ev.place?.name || ev.entities?.[0]?.name,
+              sourceUrl,
+            } as FeedEvent;
+          });
+          onLoadedEvents(normalized);
+        }
       } catch (e: any) {
         if (alive) setError(e?.message || 'Failed to load events');
       } finally {
@@ -177,7 +199,21 @@ export function EventsFeed({
                             </span>
                           )}
                         </div>
-                        <div className="text-gray-900 font-medium mb-1 line-clamp-2">{ev.title || 'Untitled event'}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="text-gray-900 font-medium line-clamp-2">
+                            {ev.title || 'Untitled event'}
+                          </div>
+                          <a
+                            href={sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 text-blue-600 hover:text-blue-700"
+                            aria-label="Open source link"
+                            title="Open source link"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
                         {ev.description && (
                           <div className="text-sm text-gray-600 line-clamp-2">{ev.description}</div>
                         )}
@@ -190,15 +226,6 @@ export function EventsFeed({
                           )}
                         </div>
                         <div className="mt-3 flex items-center gap-4">
-                          <a
-                            href={sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
-                          >
-                            <ExternalLink className="w-4 h-4 mr-1" />
-                            Source
-                          </a>
                           {onAddFromFeed && (
                             <button
                               type="button"

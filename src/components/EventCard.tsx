@@ -119,14 +119,14 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen, currentUs
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onVote(event.id); }}
-            className="group flex items-center px-3 py-2 rounded-lg transition-colors hover:bg-gray-100"
+            className="group/vote flex items-center px-3 py-2 rounded-lg transition-colors hover:bg-gray-100"
             aria-pressed={hasVoted}
             aria-label={hasVoted ? 'Remove upvote' : (event.votes > 1 ? `Upvote, ${event.votes} likes` : 'Upvote')}
             title={hasVoted ? 'Remove upvote' : 'Upvote'}
           >
-            <ThumbsUp className={`w-5 h-5 ${hasVoted ? 'text-green-600' : 'text-gray-600 group-hover:text-green-600'}`} />
+            <ThumbsUp className={`w-5 h-5 ${hasVoted ? 'text-green-600' : 'text-gray-600 group-hover/vote:text-green-600'}`} />
             {event.votes > 1 && (
-              <span className="ml-2 text-sm text-gray-600 group-hover:text-green-600">{event.votes}</span>
+              <span className="ml-2 text-sm text-gray-600 group-hover/vote:text-green-600">{event.votes}</span>
             )}
           </button>
         </div>
