@@ -116,7 +116,7 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
           <div className="text-sm text-gray-500">Created {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(event.createdAt))}</div>
           <button
             onClick={() => onVote(event.id)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
+            className={`group flex items-center justify-center p-2 rounded-lg transition-colors ${
               hasVoted
                 ? 'bg-green-50 text-green-600 hover:bg-green-100'
                 : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-green-600'
@@ -125,8 +125,7 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
             aria-label={hasVoted ? 'Remove upvote' : 'Upvote'}
             title={hasVoted ? 'Remove upvote' : 'Upvote'}
           >
-            <ThumbsUp className={`w-4 h-4 ${hasVoted ? 'text-green-600' : ''}`} />
-            <span>{hasVoted ? 'Voted' : 'Vote'}</span>
+            <ThumbsUp className={`w-5 h-5 ${hasVoted ? 'text-green-600' : 'text-gray-600 group-hover:text-green-600'}`} />
           </button>
         </div>
       </div>
