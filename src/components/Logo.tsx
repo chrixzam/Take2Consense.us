@@ -6,7 +6,7 @@ interface LogoProps {
   src?: string; // path in /public
 }
 
-// Displays the brand logo image from /public (default: /logo.svg)
+// Displays the brand logo image from /public (prefers /logo.png, falls back to /logo.svg)
 export function Logo({ size = 40, className, src = '/logo.png' }: LogoProps) {
   const pixelSize = `${size}px`;
   const [imgSrc, setImgSrc] = useState(src);
