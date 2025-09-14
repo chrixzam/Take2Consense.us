@@ -64,6 +64,81 @@ export function EventsFeed({
 
   const canFetch = useMemo(() => Boolean(token && token.trim().length > 0), [token]);
 
+  // Mock events based on the provided image
+  const mockEvents: PredictHQEvent[] = [
+    {
+      id: 'mock-1',
+      title: 'Tech Career Fair: Exclusive Tech Hiring Event',
+      start: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+      category: 'conferences',
+      description: 'Connect with top tech companies and explore exclusive hiring opportunities',
+      place: { name: 'Moscone Center', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-2',
+      title: '#ProductCon San Francisco: The AI Conference for Product Leaders',
+      start: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
+      category: 'conferences',
+      description: 'Join product leaders discussing AI and the future of product management',
+      place: { name: 'SVN West', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-3',
+      title: 'San Francisco Career Fair',
+      start: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+      category: 'conferences',
+      description: 'Network with employers and discover new career opportunities',
+      place: { name: 'Marriott San Francisco', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-4',
+      title: 'DJ Lex - Favorite Cities TOUR',
+      start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
+      category: 'concerts',
+      description: 'Electronic music experience with DJ Lex touring favorite cities',
+      place: { name: 'The Phoenix Hotel', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-5',
+      title: 'Sculpt by Clay: The Go-To Market Conference',
+      start: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now
+      category: 'conferences',
+      description: 'Learn go-to-market strategies from industry experts',
+      place: { name: '736 Mission St', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-6',
+      title: 'REAL BAD 36',
+      start: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days from now
+      category: 'sports',
+      description: 'High-energy dance and fitness event',
+      place: { name: '1015 Folsom', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-7',
+      title: 'SF Food & Wine Festival',
+      start: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days from now
+      category: 'festivals',
+      description: 'Taste the best of San Francisco cuisine and local wines',
+      place: { name: 'Golden Gate Park', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    },
+    {
+      id: 'mock-8',
+      title: 'Bay Area Startup Pitch Night',
+      start: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 8 days from now
+      category: 'conferences',
+      description: 'Watch innovative startups pitch to investors and network with founders',
+      place: { name: 'The Battery SF', type: 'venue' },
+      entities: [{ name: 'San Francisco', type: 'venue' }]
+    }
+  ];
 
   // Smart date filtering based on session dates
   const smartDateFilters = useMemo(() => {
@@ -137,7 +212,32 @@ export function EventsFeed({
   useEffect(() => {
     let alive = true;
     async function run() {
-      if (!canFetch) return;
+      if (!canFetch) {
+        // Show mock events when API is not available
+        if (alive) {
+          setEvents(mockEvents);
+          if (onLoadedEvents) {
+            const normalized: FeedEvent[] = mockEvents.map((ev: PredictHQEvent) => {
+              const searchQuery = encodeURIComponent([
+                ev.title,
+                ev.place?.name || ev.entities?.[0]?.name,
+              ].filter(Boolean).join(' '));
+              const sourceUrl = `https://www.google.com/search?q=${searchQuery}`;
+              return {
+                title: ev.title || 'Untitled event',
+                description: ev.description,
+                category: ev.category,
+                start: ev.start,
+                end: ev.end,
+                locationName: ev.place?.name || ev.entities?.[0]?.name,
+                sourceUrl,
+              } as FeedEvent;
+            });
+            onLoadedEvents(normalized);
+          }
+        }
+        return;
+      }
       setLoading(true);
       // Clear previous results when filters change to avoid showing stale lists
       setEvents([]);
