@@ -36,7 +36,11 @@ export function EventsFeed({
   locationAroundOrigin,
   locationAroundOffset,
 }: EventsFeedProps) {
-  const token = import.meta.env.VITE_PREDICTHQ_TOKEN as string | undefined;
+  const envToken = import.meta.env.VITE_PREDICTHQ_TOKEN as string | undefined;
+  // Fallback token is hardcoded for local usage. Avoid committing secrets in production.
+  const token = envToken && envToken.trim().length > 0
+    ? envToken
+    : '4vd1wx00yGqZtYdxxZMH3lZmX39f2nBlJ3A_uIz2';
   const [events, setEvents] = useState<PredictHQEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
