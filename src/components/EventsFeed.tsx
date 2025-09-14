@@ -16,9 +16,26 @@ type PredictHQEvent = {
 interface EventsFeedProps {
   query?: string;
   limit?: number;
+  country?: string;
+  category?: string;
+  activeGte?: string; // ISO date or YYYY-MM-DD
+  activeLte?: string; // ISO date or YYYY-MM-DD
+  startAroundOrigin?: string; // ISO date or YYYY-MM-DD
+  locationAroundOrigin?: string; // "lat,lon"
+  locationAroundOffset?: string; // e.g. "5mi" or "10km"
 }
 
-export function EventsFeed({ query = 'taylor swift', limit = 5 }: EventsFeedProps) {
+export function EventsFeed({
+  query = 'taylor swift',
+  limit = 5,
+  country,
+  category,
+  activeGte,
+  activeLte,
+  startAroundOrigin,
+  locationAroundOrigin,
+  locationAroundOffset,
+}: EventsFeedProps) {
   const token = import.meta.env.VITE_PREDICTHQ_TOKEN as string | undefined;
   const [events, setEvents] = useState<PredictHQEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,9 +53,16 @@ export function EventsFeed({ query = 'taylor swift', limit = 5 }: EventsFeedProp
         const params = new URLSearchParams();
         if (query) params.set('q', query);
         if (limit) params.set('limit', String(limit));
-        // Prefer upcoming events
+        if (country) params.set('country', country);
+        if (category) params.set('category', category);
+        if (activeGte) params.set('active.gte', activeGte);
+        if (activeLte) params.set('active.lte', activeLte);
+        if (startAroundOrigin) params.set('start_around.origin', startAroundOrigin);
+        if (locationAroundOrigin) params.set('location_around.origin', locationAroundOrigin);
+        if (locationAroundOffset) params.set('location_around.offset', locationAroundOffset);
+        // Prefer upcoming events by default
         params.set('sort', 'start');
-        params.set('active.gte', new Date().toISOString());
+        if (!activeGte) params.set('active.gte', new Date().toISOString());
 
         const res = await fetch(`https://api.predicthq.com/v1/events/?${params.toString()}`, {
           headers: {
@@ -142,4 +166,3 @@ export function EventsFeed({ query = 'taylor swift', limit = 5 }: EventsFeedProp
 }
 
 export default EventsFeed;
-

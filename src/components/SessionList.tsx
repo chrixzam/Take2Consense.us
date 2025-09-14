@@ -153,8 +153,17 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           </div>
         )}
 
-        {/* Events Feed */}
-        <EventsFeed />
+        {/* Events Feed (example: jazz concerts near Central Park, NYC) */}
+        <EventsFeed 
+          query="jazz"
+          country="US"
+          category="concerts"
+          locationAroundOrigin="40.782409,-73.971885"
+          locationAroundOffset="5mi"
+          // startAroundOrigin and activeGte can be set to specific dates, e.g. '2020-02-20'
+          // startAroundOrigin="2020-02-20"
+          // activeGte="2020-02-20"
+        />
       </div>
     </div>
     </div>
