@@ -3,10 +3,11 @@ import { SessionList } from './components/SessionList';
 import { SessionCreationForm } from './components/SessionCreationForm';
 import { SessionJoinForm } from './components/SessionJoinForm';
 import { SessionView } from './components/SessionView';
-import { User, GroupSession } from './types';
+import { User, GroupSession, FeedEvent, EventIdea } from './types';
 import VersionBadge from './components/VersionBadge';
 import { generateSessionId } from './utils/sessionId';
 import { detectCity, forwardGeocodeCity } from './utils/geolocation';
+import { categorizeEvent } from './utils/eventCategories';
 import Toast from './components/Toast';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [userCountry, setUserCountry] = useState<string | undefined>(undefined);
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingFeedEvent, setPendingFeedEvent] = useState<FeedEvent | null>(null);
 
   // Load sessions from localStorage
   useEffect(() => {
@@ -95,7 +97,7 @@ function App() {
     city: string;
     members: string[];
   }) => {
-    const newSession: GroupSession = {
+    let newSession: GroupSession = {
       id: Date.now().toString(),
       shareId: generateSessionId(),
       name: sessionData.name,
@@ -109,6 +111,38 @@ function App() {
       createdAt: new Date(),
       updatedAt: new Date()
     };
+
+    // If a feed event is pending (user clicked Add on home), convert and add it
+    if (pendingFeedEvent) {
+      const ev = pendingFeedEvent;
+      const start = ev.start ? new Date(ev.start) : new Date();
+      const end = ev.end ? new Date(ev.end) : null;
+      const duration = end && !Number.isNaN(end.getTime()) && end > start
+        ? Math.max(30, Math.round((end.getTime() - start.getTime()) / (1000 * 60)))
+        : 120;
+      const title = ev.title || 'Untitled event';
+      const description = ev.description || '';
+      const category = categorizeEvent(title, description);
+      const idea: EventIdea = {
+        id: Date.now().toString(),
+        title,
+        description,
+        category,
+        location: ev.locationName || sessionData.city,
+        budget: 0,
+        duration,
+        suggestedBy: 'Events Feed',
+        date: start,
+        votes: 0,
+        voters: [],
+        createdAt: new Date(),
+      };
+      newSession = {
+        ...newSession,
+        events: [idea],
+      };
+      setPendingFeedEvent(null);
+    }
 
     setSessions(prev => [newSession, ...prev]);
     setShowCreateForm(false);
@@ -246,6 +280,11 @@ function App() {
           localStorage.setItem('userLocation', JSON.stringify({ city, coords, countryCode: country, ts: Date.now() }));
           const radius = coords ? '10km' : '5mi';
           setToast(`Location set to ${city} • searching within ${radius}`);
+        }}
+        onAddEventFromFeed={(ev) => {
+          // Prompt to create a session, then add the event after creation
+          setPendingFeedEvent(ev);
+          setShowCreateForm(true);
         }}
       />
       <VersionBadge />

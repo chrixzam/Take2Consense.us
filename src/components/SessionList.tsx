@@ -3,6 +3,7 @@ import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus } from 'lucide
 import { Navigation } from './Navigation';
 import { EventsFeed } from './EventsFeed';
 import { GroupSession } from '../types';
+import type { FeedEvent } from '../types';
 import { CitySelector } from './CitySelector';
 
 type Coords = { lat: number; lon: number };
@@ -16,9 +17,10 @@ interface SessionListProps {
   currentCity: string;
   onCityChange: (city: string) => void;
   userCountry?: string;
+  onAddEventFromFeed?: (ev: FeedEvent) => void;
 }
 
-export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, userCoords, currentCity, onCityChange, userCountry }: SessionListProps) {
+export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -168,6 +170,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           category="concerts"
           locationAroundOrigin={userCoords ? `${userCoords.lat},${userCoords.lon}` : '40.782409,-73.971885'}
           locationAroundOffset={userCoords ? '10km' : '5mi'}
+          onAddFromFeed={onAddEventFromFeed}
         />
         <CitySelector
           currentCity={currentCity}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, MapPin, AlertCircle, Sparkles, ExternalLink } from 'lucide-react';
+import { FeedEvent } from '../types';
 
 type PredictHQEvent = {
   id: string;
@@ -23,6 +24,7 @@ interface EventsFeedProps {
   startAroundOrigin?: string; // ISO date or YYYY-MM-DD
   locationAroundOrigin?: string; // "lat,lon"
   locationAroundOffset?: string; // e.g. "5mi" or "10km"
+  onAddFromFeed?: (ev: FeedEvent) => void;
 }
 
 export function EventsFeed({
@@ -35,6 +37,7 @@ export function EventsFeed({
   startAroundOrigin,
   locationAroundOrigin,
   locationAroundOffset,
+  onAddFromFeed,
 }: EventsFeedProps) {
   const envToken = import.meta.env.VITE_PREDICTHQ_TOKEN as string | undefined;
   // Fallback token is hardcoded for local usage. Avoid committing secrets in production.
@@ -152,6 +155,15 @@ export function EventsFeed({
                   ev.place?.name || ev.entities?.[0]?.name,
                 ].filter(Boolean).join(' '));
                 const sourceUrl = `https://www.google.com/search?q=${searchQuery}`;
+                const payload: FeedEvent = {
+                  title: ev.title || 'Untitled event',
+                  description: ev.description,
+                  category: ev.category,
+                  start: ev.start,
+                  end: ev.end,
+                  locationName: ev.place?.name || ev.entities?.[0]?.name,
+                  sourceUrl,
+                };
                 return (
                   <li key={ev.id} className="p-4">
                     <div className="flex items-start justify-between">
@@ -175,7 +187,7 @@ export function EventsFeed({
                             <span className="inline-flex items-center"><MapPin className="w-4 h-4 mr-1 text-gray-400" /> {ev.place?.name || ev.entities?.[0]?.name}</span>
                           )}
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-3 flex items-center gap-4">
                           <a
                             href={sourceUrl}
                             target="_blank"
@@ -185,6 +197,16 @@ export function EventsFeed({
                             <ExternalLink className="w-4 h-4 mr-1" />
                             Source
                           </a>
+                          {onAddFromFeed && (
+                            <button
+                              type="button"
+                              onClick={() => onAddFromFeed(payload)}
+                              className="inline-flex items-center text-sm font-medium text-green-700 hover:text-green-800"
+                              title="Add this event as an idea"
+                            >
+                              + Add to ideas
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

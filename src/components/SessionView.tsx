@@ -11,6 +11,7 @@ import { EventIdea, User, GroupSession } from '../types';
 import { categorizeEvent } from '../utils/eventCategories';
 import { forwardGeocodeCity } from '../utils/geolocation';
 import { Calendar, Grid3X3, Sparkles, Users, MapPin, Share2 } from 'lucide-react';
+import type { FeedEvent } from '../types';
 
 interface SessionViewProps {
   session: GroupSession;
@@ -102,6 +103,37 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
       updatedAt: new Date()
     };
 
+    onUpdateSession(updatedSession);
+  };
+
+  const handleAddFromFeed = (ev: FeedEvent) => {
+    const start = ev.start ? new Date(ev.start) : new Date();
+    const end = ev.end ? new Date(ev.end) : null;
+    const duration = end && !Number.isNaN(end.getTime()) && end > start
+      ? Math.max(30, Math.round((end.getTime() - start.getTime()) / (1000 * 60)))
+      : 120;
+    const title = ev.title || 'Untitled event';
+    const description = ev.description || '';
+    const category = categorizeEvent(title, description);
+    const newEvent: EventIdea = {
+      id: Date.now().toString(),
+      title,
+      description,
+      category,
+      location: ev.locationName || session.city,
+      budget: 0,
+      duration,
+      suggestedBy: currentUser.name,
+      date: start,
+      votes: 0,
+      voters: [],
+      createdAt: new Date(),
+    };
+    const updatedSession = {
+      ...session,
+      events: [...session.events, newEvent],
+      updatedAt: new Date(),
+    };
     onUpdateSession(updatedSession);
   };
 
@@ -265,6 +297,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
             category="concerts"
             locationAroundOrigin={sessionCoords ? `${sessionCoords.lat},${sessionCoords.lon}` : undefined}
             locationAroundOffset={sessionCoords ? '10km' : undefined}
+            onAddFromFeed={handleAddFromFeed}
           />
         </div>
       </main>

@@ -30,3 +30,14 @@ export interface GroupSession {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Normalized event from external feeds (e.g., PredictHQ)
+export interface FeedEvent {
+  title: string;
+  description?: string;
+  category?: string;
+  start?: string; // ISO string
+  end?: string;   // ISO string
+  locationName?: string;
+  sourceUrl?: string;
+}
