@@ -231,11 +231,50 @@ export async function planWithAgent(
 
   // Ensure we have coordinates: try forward-geocode the city if missing
   let usedCoords: Coords | undefined = coords;
+  let resolvedCity = city;
+  let resolvedCountry = country;
+  
   if (!usedCoords && city) {
     try {
       const geo = await forwardGeocodeCity(city);
-      if (geo?.coords) usedCoords = geo.coords;
-      if (!country && geo?.countryCode) country = geo.countryCode;
+      if (geo?.coords) {
+        usedCoords = geo.coords;
+        // Keep the original city name since forwardGeocodeCity doesn't return a label
+        resolvedCity = city;
+      }
+      if (!resolvedCountry && geo?.countryCode) {
+        resolvedCountry = geo.countryCode;
+      }
+    } catch {}
+  }
+  
+  // If we still don't have coordinates but have a city, try to resolve it better
+  if (!usedCoords && resolvedCity) {
+    try {
+      // Enhanced city resolution - try common city + country combinations
+      const cityVariations = [
+        resolvedCity,
+        `${resolvedCity}, Japan`, // For cities like Kyoto, Tokyo
+        `${resolvedCity}, France`, // For cities like Paris
+        `${resolvedCity}, UK`, // For cities like London
+        `${resolvedCity}, Italy`, // For cities like Rome
+        `${resolvedCity}, Spain`, // For cities like Madrid
+        `${resolvedCity}, Germany`, // For cities like Berlin
+      ];
+      
+      for (const variation of cityVariations) {
+        try {
+          const geo = await forwardGeocodeCity(variation);
+          if (geo?.coords) {
+            usedCoords = geo.coords;
+            resolvedCity = variation; // Use the variation that worked
+            resolvedCountry = geo.countryCode || resolvedCountry;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
     } catch {}
   }
 
@@ -336,4 +375,145 @@ export async function planWithAgent(
   // Local fallback: keep left column minimal; suggestions remain on the right.
   const fallback = `Draft prepared for "${idea}".`;
   return { text: fallback, model, provider, source: 'local', places: nearby, events };
+}
+
+export async function bookWithAgent(
+  planText: string,
+  places: PlaceSuggestion[],
+  events: EventSuggestion[],
+  coords?: Coords,
+  city?: string,
+  country?: string,
+  budgetLevel?: number,
+  startDate?: Date,
+  endDate?: Date,
+): Promise<PlanResult> {
+  const agent = registry.get('booking');
+  if (!agent) {
+    return { text: 'Booking agent not found.', source: 'local' };
+  }
+
+  // Build booking context from the plan and suggestions
+  const placesContext = places.length
+    ? `\n\nPlaces to book:\n` +
+      places
+        .map((p, i) => {
+          const priceInfo = p.priceLevel ? ` (${p.priceLevel})` : '';
+          const addressInfo = p.address ? ` - ${p.address}` : '';
+          return `${i + 1}. ${p.name}${priceInfo}${addressInfo}\n   Type: ${p.type.replace('_', ' ')}\n   Distance: ${p.distKm.toFixed(1)} km\n   URL: ${p.url}`;
+        })
+        .join('\n\n')
+    : '';
+
+  const eventsContext = events.length
+    ? `\n\nEvents to consider:\n` +
+      events
+        .map((e, i) => {
+          const when = e.start ? new Date(e.start).toLocaleString() : 'date TBA';
+          const where = e.place ? ` @ ${e.place}` : '';
+          const cat = e.category ? ` • ${e.category}` : '';
+          return `${i + 1}. ${e.title}${where}${cat}\n   When: ${when}\n   URL: ${e.url}`;
+        })
+        .join('\n\n')
+    : '';
+
+  const budgetContext = Number.isFinite(budgetLevel) && budgetLevel && budgetLevel >= 1 && budgetLevel <= 5
+    ? `\n\nBudget level: ${'$'.repeat(budgetLevel)} (${budgetLevel}/5)`
+    : '';
+
+  const dateContext = startDate || endDate
+    ? `\n\nDates: ` +
+      (startDate && endDate
+        ? `${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}`
+        : startDate
+        ? `from ${new Date(startDate).toLocaleDateString()}`
+        : `until ${new Date(endDate as Date).toLocaleDateString()}`)
+    : '';
+
+  const locationContext = city ? `\n\nLocation: ${city}${country ? `, ${country}` : ''}` : '';
+
+  const bookingInput = `Original plan:\n${planText}${placesContext}${eventsContext}${budgetContext}${dateContext}${locationContext}
+
+Please provide specific booking instructions, contact information, and reservation tips for these venues and events. Include phone numbers, websites, booking platforms, optimal timing for reservations, and backup options.`;
+
+  // Use the same model resolution as planWithAgent
+  const prep = await runAgent(agent, bookingInput, { mode: 'base' });
+  const { model, provider } = (() => {
+    const norm = normalizeModelId(prep.model);
+    const forcedProvider = 'anthropic';
+    const forcedModel = (norm?.provider === 'anthropic' ? norm?.model : undefined) || (prep.provider === 'anthropic' ? prep.model : undefined) || 'anthropic/claude-3-5-sonnet-20240620';
+    return { model: forcedModel, provider: forcedProvider };
+  })();
+
+  // Try API endpoint first
+  const apiUrl = import.meta.env.VITE_AGENT_API_URL as string | undefined;
+  if (apiUrl) {
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          agentId: 'booking', 
+          userInput: bookingInput, 
+          mode: 'base', 
+          coords, 
+          city, 
+          country, 
+          budgetLevel, 
+          startDate, 
+          endDate 
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          text: data.text || String(data),
+          model: data.model || model,
+          provider: data.provider || provider,
+          source: 'api',
+          places,
+          events,
+        };
+      }
+    } catch (_) {
+      // fall through to direct provider call
+    }
+  }
+
+  // Try Anthropic API directly
+  const anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
+  if (anthropicKey) {
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: (model || 'claude-3-5-sonnet-20240620').replace(/^anthropic\//, ''),
+          max_tokens: 1000,
+          system: prep.preparedPrompt.split('\n\n[User]\n')[0],
+          messages: [{ role: 'user', content: bookingInput }],
+        }),
+      });
+      if (response.ok) {
+        const data: any = await response.json();
+        const text = data?.content?.[0]?.text || JSON.stringify(data);
+        return { text, model, provider, source: 'anthropic', places, events };
+      }
+    } catch (_) {}
+  }
+
+  // Local fallback with basic booking guidance
+  const fallback = `Booking guidance for your plan:
+
+${places.length > 0 ? `**Venues to book:**\n${places.map(p => `• ${p.name} - Visit ${p.url} or search online for contact info`).join('\n')}\n\n` : ''}${events.length > 0 ? `**Events to attend:**\n${events.map(e => `• ${e.title} - Check ${e.url} for tickets`).join('\n')}\n\n` : ''}**General booking tips:**
+• Book restaurants 1-2 weeks in advance
+• Check cancellation policies
+• Confirm reservations 24 hours before
+• Have backup options ready`;
+
+  return { text: fallback, model, provider, source: 'local', places, events };
 }

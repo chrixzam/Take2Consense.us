@@ -61,6 +61,47 @@ export async function forwardGeocodeCity(name: string): Promise<{ coords: Coordi
   return { coords: { lat, lon }, countryCode };
 }
 
+// Google Places API: Find Place from Text to resolve free-form text to a place
+// Returns label + coords + countryCode (via details)
+export async function findPlaceFromText(query: string): Promise<{ label: string; coords: Coordinates; countryCode?: string } | null> {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  const q = query.trim();
+  if (!q || !key) return null;
+  try {
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(q)}&inputtype=textquery&fields=place_id,name,formatted_address,geometry&key=${encodeURIComponent(key)}`;
+    const res = await fetch(searchUrl);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const first = Array.isArray(data?.candidates) && data.candidates.length > 0 ? data.candidates[0] : null;
+    if (!first) return null;
+    const lat = Number(first?.geometry?.location?.lat);
+    const lon = Number(first?.geometry?.location?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const label = (first?.name && first?.formatted_address)
+      ? `${first.name}, ${first.formatted_address}`
+      : (first?.formatted_address || first?.name || q);
+
+    // Try to get country code via Place Details for better conflict checks
+    let countryCode: string | undefined = undefined;
+    const placeId = first?.place_id as string | undefined;
+    if (placeId) {
+      try {
+        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=address_component&key=${encodeURIComponent(key)}`;
+        const detRes = await fetch(detailsUrl);
+        if (detRes.ok) {
+          const det = await detRes.json();
+          const comps: Array<{ long_name: string; short_name: string; types: string[] }>
+            = det?.result?.address_components || [];
+          countryCode = comps.find(c => c.types.includes('country'))?.short_name;
+        }
+      } catch {}
+    }
+    return { label, coords: { lat, lon }, countryCode };
+  } catch {
+    return null;
+  }
+}
+
 async function googleGeolocate(): Promise<Coordinates | null> {
   const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   if (!key) return null;

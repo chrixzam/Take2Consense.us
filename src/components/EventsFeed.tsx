@@ -24,6 +24,12 @@ interface EventsFeedProps {
   startAroundOrigin?: string; // ISO date or YYYY-MM-DD
   locationAroundOrigin?: string; // "lat,lon"
   locationAroundOffset?: string; // e.g. "5mi" or "10km"
+  sessionStartDate?: Date; // Session start date for date-based suggestions
+  sessionEndDate?: Date; // Session end date for date-based suggestions
+  sessionName?: string; // Session name for query enhancement
+  sessionDescription?: string; // Session description for query enhancement
+  sessionCity?: string; // Session city for location-based suggestions
+  userStatedLocation?: string; // User's explicitly stated location
   onAddFromFeed?: (ev: FeedEvent) => void;
   onLoadedEvents?: (events: FeedEvent[]) => void;
 }
@@ -38,6 +44,12 @@ export function EventsFeed({
   startAroundOrigin,
   locationAroundOrigin,
   locationAroundOffset,
+  sessionStartDate,
+  sessionEndDate,
+  sessionName,
+  sessionDescription,
+  sessionCity,
+  userStatedLocation,
   onAddFromFeed,
   onLoadedEvents,
 }: EventsFeedProps) {
@@ -52,26 +64,116 @@ export function EventsFeed({
 
   const canFetch = useMemo(() => Boolean(token && token.trim().length > 0), [token]);
 
+
+  // Smart date filtering based on session dates
+  const smartDateFilters = useMemo(() => {
+    const filters: { activeGte?: string; activeLte?: string } = {};
+    
+    // Use session dates if available, otherwise use provided date filters
+    if (sessionStartDate && !activeGte) {
+      filters.activeGte = sessionStartDate.toISOString();
+    } else if (activeGte) {
+      filters.activeGte = activeGte;
+    }
+    
+    if (sessionEndDate && !activeLte) {
+      // Add a buffer to the end date to catch events that might extend slightly beyond
+      const bufferedEndDate = new Date(sessionEndDate);
+      bufferedEndDate.setDate(bufferedEndDate.getDate() + 7); // 7-day buffer
+      filters.activeLte = bufferedEndDate.toISOString();
+    } else if (activeLte) {
+      filters.activeLte = activeLte;
+    }
+    
+    return filters;
+  }, [sessionStartDate, sessionEndDate, activeGte, activeLte]);
+
+  // Smart query generation based on session context
+  const smartQuery = useMemo(() => {
+    // If we have both location and date data, create a more targeted query
+    const hasLocationData = userStatedLocation || sessionCity || locationAroundOrigin;
+    const hasDateData = sessionStartDate || sessionEndDate || smartDateFilters.activeGte || smartDateFilters.activeLte;
+    
+    if (hasLocationData && hasDateData) {
+      // Use session context to create better queries
+      const locationContext = userStatedLocation || sessionCity || '';
+      const sessionContext = sessionName || sessionDescription || '';
+      
+      // Generate contextual search terms
+      const contextTerms = [];
+      if (sessionContext.toLowerCase().includes('music') || sessionContext.toLowerCase().includes('concert')) {
+        contextTerms.push('concerts', 'music', 'festivals');
+      }
+      if (sessionContext.toLowerCase().includes('food') || sessionContext.toLowerCase().includes('dining')) {
+        contextTerms.push('food', 'restaurants', 'culinary');
+      }
+      if (sessionContext.toLowerCase().includes('art') || sessionContext.toLowerCase().includes('culture')) {
+        contextTerms.push('art', 'exhibitions', 'cultural');
+      }
+      if (sessionContext.toLowerCase().includes('sport') || sessionContext.toLowerCase().includes('game')) {
+        contextTerms.push('sports', 'games', 'tournaments');
+      }
+      
+      // Default to general events if no specific context
+      if (contextTerms.length === 0) {
+        contextTerms.push('events', 'activities', 'entertainment');
+      }
+      
+      return contextTerms.join(' OR ');
+    }
+    
+    // Fallback to provided query or default
+    return query;
+  }, [query, userStatedLocation, sessionCity, locationAroundOrigin, sessionStartDate, sessionEndDate, smartDateFilters.activeGte, smartDateFilters.activeLte, sessionName, sessionDescription]);
+
+  // Enhanced location context display
+  const locationContext = useMemo(() => {
+    if (userStatedLocation && userStatedLocation !== sessionCity) {
+      return userStatedLocation;
+    }
+    return sessionCity;
+  }, [userStatedLocation, sessionCity]);
+
   useEffect(() => {
     let alive = true;
     async function run() {
       if (!canFetch) return;
       setLoading(true);
+      // Clear previous results when filters change to avoid showing stale lists
+      setEvents([]);
       setError(null);
       try {
         const params = new URLSearchParams();
-        if (query) params.set('q', query);
+        // Remove query parameter - use only date-based filtering
         if (limit) params.set('limit', String(limit));
         if (country) params.set('country', country);
         if (category) params.set('category', category);
-        if (activeGte) params.set('active.gte', activeGte);
-        if (activeLte) params.set('active.lte', activeLte);
+        
+        // Use smart date filters that prioritize session dates, but ensure no past events
+        const now = new Date();
+        let startDate = now.toISOString();
+        
+        if (smartDateFilters.activeGte) {
+          // Use the later of session start date or current time to avoid past events
+          const sessionStart = new Date(smartDateFilters.activeGte);
+          startDate = sessionStart > now ? smartDateFilters.activeGte : now.toISOString();
+        } else if (activeGte) {
+          // Use the later of provided start date or current time to avoid past events
+          const providedStart = new Date(activeGte);
+          startDate = providedStart > now ? activeGte : now.toISOString();
+        }
+        
+        params.set('active.gte', startDate);
+        
+        if (smartDateFilters.activeLte) {
+          params.set('active.lte', smartDateFilters.activeLte);
+        }
+        
         if (startAroundOrigin) params.set('start_around.origin', startAroundOrigin);
         if (locationAroundOrigin) params.set('location_around.origin', locationAroundOrigin);
         if (locationAroundOffset) params.set('location_around.offset', locationAroundOffset);
         // Prefer upcoming events by default
         params.set('sort', 'start');
-        if (!activeGte) params.set('active.gte', new Date().toISOString());
 
         const res = await fetch(`https://api.predicthq.com/v1/events/?${params.toString()}`, {
           headers: {
@@ -124,15 +226,19 @@ export function EventsFeed({
       window.clearInterval(intervalId);
     };
   }, [
-    query,
     limit,
     country,
     category,
-    activeGte,
-    activeLte,
+    smartDateFilters.activeGte,
+    smartDateFilters.activeLte,
     startAroundOrigin,
     locationAroundOrigin,
     locationAroundOffset,
+    sessionStartDate,
+    sessionEndDate,
+    sessionCity,
+    userStatedLocation,
+    smartQuery,
     canFetch,
     token,
   ]);
@@ -156,7 +262,25 @@ export function EventsFeed({
           <Sparkles className="w-4 h-4 text-purple-600" />
         </div>
         <h2 className="text-xl font-semibold text-gray-900">Events Feed</h2>
-        <span className="ml-2 text-sm text-gray-500">Query: {query}</span>
+        <div className="ml-2 text-xs text-blue-600 flex flex-wrap items-center gap-2">
+          {locationContext && (
+            <span>• Location: {locationContext}</span>
+          )}
+          {locationAroundOrigin && (
+            <span>• Geo: {locationAroundOrigin} ({locationAroundOffset || '10km'})</span>
+          )}
+          {sessionStartDate && (
+            <span>
+              • Session dates: {sessionStartDate.toLocaleDateString()}
+              {sessionEndDate && sessionEndDate.getTime() !== sessionStartDate.getTime() && 
+                ` - ${sessionEndDate.toLocaleDateString()}`
+              }
+            </span>
+          )}
+          {userStatedLocation && userStatedLocation !== sessionCity && (
+            <span>• User location: {userStatedLocation}</span>
+          )}
+        </div>
       </div>
 
       {!canFetch && (

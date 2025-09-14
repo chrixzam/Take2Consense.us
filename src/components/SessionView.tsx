@@ -294,12 +294,35 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                     </div>
                     <div className="flex items-center space-x-1">
                       <MapPin className="w-4 h-4" />
-                      <span>{session.city}</span>
+                      <span>{session.userStatedLocation || session.city}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>{session.events.length} event ideas</span>
                     </div>
+                  </div>
+                  {/* Session dates and creation info */}
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                    <div>
+                      Created {session.createdAt.toLocaleDateString()}
+                    </div>
+                    {session.sessionStartDate && (
+                      <div className="flex items-center space-x-1">
+                        <span>•</span>
+                        <span>
+                          Session dates: {session.sessionStartDate.toLocaleDateString()}
+                          {session.sessionEndDate && session.sessionEndDate.getTime() !== session.sessionStartDate.getTime() && 
+                            ` - ${session.sessionEndDate.toLocaleDateString()}`
+                          }
+                        </span>
+                      </div>
+                    )}
+                    {session.userStatedLocation && session.userStatedLocation !== session.city && (
+                      <div className="flex items-center space-x-1">
+                        <span>•</span>
+                        <span>User specified: {session.userStatedLocation}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -401,18 +424,29 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
           )}
 
           {activeView === 'calendar' && (
-            <CalendarView events={session.events} />
+            <CalendarView 
+              events={session.events} 
+              sessionStartDate={session.sessionStartDate}
+              sessionEndDate={session.sessionEndDate}
+            />
           )}
 
           {/* Random picker moved to modal; removed redundant bottom view */}
 
-          {/* Events Feed for this session (uses session city) */}
+          {/* Events Feed for this session (uses session city and date metadata) */}
           <EventsFeed
-            query="jazz"
+            key={session.id}
+            query="events"
             country={sessionCountry}
             category="concerts"
             locationAroundOrigin={sessionCoords ? `${sessionCoords.lat},${sessionCoords.lon}` : undefined}
             locationAroundOffset={sessionCoords ? '10km' : undefined}
+            sessionStartDate={session.sessionStartDate}
+            sessionEndDate={session.sessionEndDate}
+            sessionName={session.name}
+            sessionDescription={session.description}
+            sessionCity={session.city}
+            userStatedLocation={session.userStatedLocation}
             onAddFromFeed={handleAddFromFeed}
             onLoadedEvents={(evs) => setFeedEvents(evs)}
           />

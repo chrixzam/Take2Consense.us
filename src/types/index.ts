@@ -34,6 +34,9 @@ export interface GroupSession {
   members: User[];
   events: EventIdea[];
   city: string;
+  userStatedLocation?: string; // The exact location text as stated by the user
+  sessionStartDate?: Date; // When the session activities should start
+  sessionEndDate?: Date; // When the session activities should end
   createdAt: Date;
   updatedAt: Date;
 }

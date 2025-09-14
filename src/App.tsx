@@ -33,6 +33,9 @@ function App() {
         ...session,
         // Migrate existing sessions to have shareId if missing
         shareId: session.shareId || generateSessionId(),
+        // Migrate existing sessions to handle new date fields
+        sessionStartDate: session.sessionStartDate ? new Date(session.sessionStartDate) : undefined,
+        sessionEndDate: session.sessionEndDate ? new Date(session.sessionEndDate) : undefined,
         createdAt: new Date(session.createdAt),
         updatedAt: new Date(session.updatedAt),
         events: session.events.map((event: any) => ({
@@ -230,22 +233,51 @@ function App() {
     setCurrentSession(null);
   };
 
-  const handleCreateSessionFromAgentPlan = (subject: string, feedEvents: FeedEvent[]) => {
+  const handleCreateSessionFromAgentPlan = (
+    subject: string, 
+    feedEvents: FeedEvent[], 
+    cityLabel?: string,
+    userStatedLocation?: string,
+    sessionStartDate?: Date,
+    sessionEndDate?: Date
+  ) => {
     const name = subject && subject.trim() ? subject.trim() : 'New Planning Session';
+    const city = (cityLabel && cityLabel.trim()) || currentCity;
+    
+    // Enhanced description to include location context
+    let description = '';
+    if (userStatedLocation && userStatedLocation !== city) {
+      description = userStatedLocation;
+    } else if (sessionStartDate || sessionEndDate) {
+      const dateRange = sessionStartDate && sessionEndDate 
+        ? `${sessionStartDate.toLocaleDateString()} - ${sessionEndDate.toLocaleDateString()}`
+        : sessionStartDate 
+        ? `starting ${sessionStartDate.toLocaleDateString()}`
+        : `ending ${sessionEndDate?.toLocaleDateString()}`;
+      description = dateRange;
+    }
+    
+    // Use the most specific location for session ID generation
+    // Priority: userStatedLocation (from prompt) > cityLabel (detected/filtered) > currentCity (user's location)
+    const locationForSessionId = userStatedLocation || cityLabel || currentCity;
+    
     const newSessionBase: GroupSession = {
       id: Date.now().toString(),
-      shareId: generateSessionId(),
+      shareId: generateSessionId(locationForSessionId),
       name,
-      description: '',
+      description,
       members: [currentUser],
       events: [],
-      city: currentCity,
+      city,
+      userStatedLocation, // Store the exact location text as stated by the user
+      sessionStartDate,
+      sessionEndDate,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const ideas: EventIdea[] = (feedEvents || []).map((ev) => {
-      const start = ev.start ? new Date(ev.start) : new Date();
+      const start = ev.start ? new Date(ev.start) : sessionStartDate || new Date();
       const end = ev.end ? new Date(ev.end) : null;
       const duration = end && !Number.isNaN(end.getTime()) && end > start
         ? Math.max(30, Math.round((end.getTime() - start.getTime()) / (1000 * 60)))
@@ -253,12 +285,21 @@ function App() {
       const title = ev.title || 'Untitled event';
       const description = ev.description || '';
       const category = categorizeEvent(title, description);
+      
+      // Use the most specific location available
+      let eventLocation = ev.locationName || userStatedLocation || city;
+      
+      // If we have address info from the feed event, include it
+      if (ev.address && ev.address !== ev.locationName) {
+        eventLocation = ev.address;
+      }
+      
       return {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title,
         description,
         category,
-        location: ev.locationName || currentCity,
+        location: eventLocation,
         budget: 0,
         duration,
         suggestedBy: 'Agent Plan',
@@ -274,6 +315,14 @@ function App() {
       ...newSessionBase,
       events: ideas,
     };
+
+    console.log('Created session with geo data:', {
+      city: newSession.city,
+      userStatedLocation: newSession.userStatedLocation,
+      sessionStartDate: newSession.sessionStartDate,
+      sessionEndDate: newSession.sessionEndDate,
+      eventLocations: ideas.map(e => e.location)
+    });
 
     setSessions(prev => [newSession, ...prev]);
     setCurrentSession(newSession);

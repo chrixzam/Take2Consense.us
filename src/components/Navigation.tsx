@@ -1,6 +1,7 @@
 import React from 'react';
-import { MapPin, Settings, ArrowLeft } from 'lucide-react';
+import { MapPin, Settings, ArrowLeft, RefreshCw } from 'lucide-react';
 import Logo from './Logo';
+import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 interface NavigationProps {
   // Main app navigation
@@ -8,7 +9,7 @@ interface NavigationProps {
   onBack?: () => void;
   onLogoClick?: () => void;
   
-  // Session-specific props
+  // Session-specific props (deprecated - keeping for compatibility)
   sessionName?: string;
   memberCount?: number;
   currentCity?: string;
@@ -24,10 +25,11 @@ export function Navigation({
   onLogoClick,
   // sessionName,
   // memberCount,
-  currentCity,
-  onCityEdit,
+  currentCity, // Keep for backward compatibility but don't use
+  onCityEdit, // Keep for backward compatibility but don't use
   onSettings
 }: NavigationProps) {
+  const { currentLocation, isLoading, refreshLocation } = useCurrentLocation();
   return (
     <>
       <nav className="border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/70">
@@ -56,15 +58,20 @@ export function Navigation({
 
             {/* Right section */}
             <div className="flex items-center space-x-3">
-              {currentCity && onCityEdit && (
+              {/* Current Location Display */}
+              <div className="flex items-center space-x-2">
                 <button
-                  onClick={onCityEdit}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={refreshLocation}
+                  disabled={isLoading}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                  title="Your current location (click to refresh)"
                 >
                   <MapPin className="w-4 h-4" />
-                  <span className="hidden sm:inline">{currentCity}</span>
+                  <span className="hidden sm:inline">
+                    {isLoading ? 'Detecting...' : currentLocation || 'Location unavailable'}
+                  </span>
                 </button>
-              )}
+              </div>
               
               {onSettings && (
                 <button

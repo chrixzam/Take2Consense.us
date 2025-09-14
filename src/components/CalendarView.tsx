@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface CalendarViewProps {
   events: EventIdea[];
+  sessionStartDate?: Date;
+  sessionEndDate?: Date;
 }
 
-export function CalendarView({ events }: CalendarViewProps) {
+export function CalendarView({ events, sessionStartDate, sessionEndDate }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Auto-navigate to session start date when component mounts or session dates change
+  useEffect(() => {
+    if (sessionStartDate) {
+      setCurrentDate(new Date(sessionStartDate.getFullYear(), sessionStartDate.getMonth(), 1));
+    }
+  }, [sessionStartDate]);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -74,6 +83,30 @@ export function CalendarView({ events }: CalendarViewProps) {
       </div>
 
       <div className="p-6">
+        {/* Legend for session dates */}
+        {(sessionStartDate || sessionEndDate) && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-gray-700">Session Timeline</h4>
+              <div className="flex items-center space-x-4 text-xs">
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+                  <span className="text-gray-600">Session period</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 bg-green-100 border-2 border-green-400 rounded"></div>
+                  <span className="text-gray-600">Start/End dates</span>
+                </div>
+              </div>
+            </div>
+            {sessionStartDate && sessionEndDate && (
+              <p className="text-sm text-gray-600 mt-1">
+                {sessionStartDate.toLocaleDateString()} - {sessionEndDate.toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-7 gap-1 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
@@ -89,17 +122,45 @@ export function CalendarView({ events }: CalendarViewProps) {
           
           {days.map(day => {
             const dayEvents = getEventsForDay(day);
-            const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
+            const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+            const isToday = new Date().toDateString() === dayDate.toDateString();
+            
+            // Check if this day is within the session date range
+            const isInSessionRange = sessionStartDate && sessionEndDate && 
+              dayDate >= sessionStartDate && dayDate <= sessionEndDate;
+            const isSessionStart = sessionStartDate && 
+              dayDate.toDateString() === sessionStartDate.toDateString();
+            const isSessionEnd = sessionEndDate && 
+              dayDate.toDateString() === sessionEndDate.toDateString();
+            
+            let dayClasses = 'p-2 h-24 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors';
+            let dayNumberClasses = 'text-sm font-medium mb-1';
+            
+            if (isToday) {
+              dayClasses += ' bg-blue-50 border-blue-200';
+              dayNumberClasses += ' text-blue-600';
+            } else if (isInSessionRange) {
+              dayClasses += ' bg-green-50 border-green-200';
+              dayNumberClasses += ' text-green-700';
+            } else {
+              dayNumberClasses += ' text-gray-900';
+            }
+            
+            if (isSessionStart || isSessionEnd) {
+              dayClasses += ' ring-2 ring-green-400';
+            }
             
             return (
-              <div
-                key={day}
-                className={`p-2 h-24 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors ${
-                  isToday ? 'bg-blue-50 border-blue-200' : ''
-                }`}
-              >
-                <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+              <div key={day} className={dayClasses}>
+                <div className={dayNumberClasses}>
                   {day}
+                  {isSessionStart && (
+                    <span className="ml-1 text-xs text-green-600 font-semibold">Start</span>
+                  )}
+                  {isSessionEnd && sessionStartDate && sessionEndDate && 
+                   sessionStartDate.toDateString() !== sessionEndDate.toDateString() && (
+                    <span className="ml-1 text-xs text-green-600 font-semibold">End</span>
+                  )}
                 </div>
                 <div className="space-y-1">
                   {dayEvents.slice(0, 2).map(event => (

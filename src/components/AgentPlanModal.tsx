@@ -2,6 +2,7 @@ import React from 'react';
 import type { FeedEvent } from '../types';
 import type { PlaceSuggestion, EventSuggestion } from '../agents/service';
 import { loadGoogleMaps } from '../utils/googleMapsLoader';
+import BookingModal from './BookingModal';
 
 type Coords = { lat: number; lon: number };
 
@@ -31,6 +32,47 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
   const mapInstanceRef = React.useRef<any>(null);
   const markersRef = React.useRef<any[] | null>(null);
   const [addedKeys, setAddedKeys] = React.useState<Set<string>>(new Set());
+  const [bookingModalOpen, setBookingModalOpen] = React.useState(false);
+
+  // Function to check if booking agent should be shown
+  const shouldShowBookingAgent = React.useMemo(() => {
+    // Check for travel-related keywords in the idea
+    const travelKeywords = [
+      'travel', 'trip', 'vacation', 'holiday', 'visit', 'visiting', 'fly', 'flight', 'hotel', 'stay', 'staying',
+      'weekend getaway', 'road trip', 'destination', 'explore', 'exploring', 'tour', 'touring', 'journey',
+      'adventure', 'escape', 'getaway', 'abroad', 'international', 'domestic', 'book', 'booking', 'reserve',
+      'reservation', 'accommodation', 'lodging', 'airbnb', 'hostel', 'resort', 'cruise', 'train', 'bus',
+      'rental car', 'itinerary', 'sightseeing', 'tourist', 'backpack', 'backpacking'
+    ];
+    
+    const ideaLower = idea.toLowerCase();
+    const hasTravelKeywords = travelKeywords.some(keyword => ideaLower.includes(keyword));
+    
+    // Check if location is far from user's current location (if we have coordinates)
+    let isFarLocation = false;
+    if (originCoords && places.length > 0) {
+      // Calculate average distance of suggested places
+      const avgDistance = places.reduce((sum, place) => sum + place.distKm, 0) / places.length;
+      // Consider "far" if average distance is more than 50km (about 30 miles)
+      isFarLocation = avgDistance > 50;
+    }
+    
+    // Check if the location label suggests a different city/region
+    let isDifferentLocation = false;
+    if (locationLabel) {
+      // Simple heuristic: if location label contains state/country indicators or is different from common local terms
+      const locationLower = locationLabel.toLowerCase();
+      const localTerms = ['nearby', 'local', 'around here', 'close by'];
+      const hasLocalTerms = localTerms.some(term => locationLower.includes(term));
+      
+      // If it's not a local term and contains location indicators, it's likely a different location
+      if (!hasLocalTerms && (locationLower.includes(',') || locationLower.length > 20)) {
+        isDifferentLocation = true;
+      }
+    }
+    
+    return hasTravelKeywords || isFarLocation || isDifferentLocation;
+  }, [idea, originCoords, places, locationLabel]);
 
   // Load Google Maps and render markers for suggested places when modal opens/updates
   React.useEffect(() => {
@@ -331,10 +373,35 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
             )}
           </div>
         </div>
-        <div className="p-4 border-t border-gray-100 flex items-center justify-end">
+        <div className="p-4 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {(places.length > 0 || events.length > 0) && shouldShowBookingAgent && (
+              <button
+                onClick={() => setBookingModalOpen(true)}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+              >
+                Get Booking Info
+              </button>
+            )}
+          </div>
           <button onClick={onClose} className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black">Close</button>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        open={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        planText={planText}
+        places={places}
+        events={events}
+        startDate={startDate}
+        endDate={endDate}
+        budgetLevel={budgetLevel}
+        locationLabel={locationLabel}
+        coords={originCoords}
+        city={locationLabel}
+      />
     </div>
   );
 }
