@@ -302,15 +302,22 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {session.members.map((member, index) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full text-xs font-medium text-gray-700"
-                    title={member.name}
-                  >
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
-                ))}
+                {session.members.map((member) => {
+                  const displayAvatar = member.avatar || (member.name && currentUser.name && member.name.toLowerCase() === currentUser.name.toLowerCase() ? currentUser.avatar : undefined);
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium text-gray-700 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200"
+                      title={member.name}
+                    >
+                      {displayAvatar ? (
+                        <img src={displayAvatar} alt={member.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{member.name.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                  );
+                })}
                 <button
                   onClick={() => setShowShareModal(true)}
                   className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full text-xs font-medium text-blue-700 hover:from-blue-200 hover:to-blue-300 transition-all"
