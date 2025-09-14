@@ -7,7 +7,7 @@ import { RandomSuggestion } from './RandomSuggestion';
 import { CitySelector } from './CitySelector';
 import { EventIdea, User, GroupSession } from '../types';
 import { categorizeEvent } from '../utils/eventCategories';
-import { Calendar, Grid3X3, Shuffle } from 'lucide-react';
+import { Calendar, Grid3X3, Shuffle, Sparkles, Users, MapPin } from 'lucide-react';
 
 interface SessionViewProps {
   session: GroupSession;
