@@ -263,11 +263,15 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4">
           <div className="md:col-span-2 p-0 md:p-5 max-h-[60vh] overflow-auto border-b md:border-b-0 md:border-r border-gray-100">
             {/* Map container (optional; loads when API key present) */}
-            <img 
-              src="/fiji-map.jpg"
-              alt="Fiji Water Sports Map"
-              className="w-full h-48 md:rounded-md object-cover"
-            />
+            {window.location.pathname === '/demo' ? (
+              <img 
+                src="/fiji-map.jpg"
+                alt="Fiji Water Sports Map"
+                className="w-full h-48 md:rounded-md object-cover"
+              />
+            ) : (
+              <div ref={mapRef} className="w-full h-48 bg-gray-100 md:rounded-md"></div>
+            )}
             {/* Small subsection under the map (customizable) */}
             <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
               {mapFooter ? (
