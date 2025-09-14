@@ -29,6 +29,8 @@ type EventsFeedProps = {
   limit?: number;
   // Optional: force a specific organization ID
   organizationId?: string;
+  // Optional: filter events to a specific city (e.g. "San Francisco")
+  city?: string;
 };
 
 function resolveToken(propToken?: string): string | null {
@@ -81,7 +83,7 @@ async function fetchJSON(url: string, token: string, signal?: AbortSignal) {
   return res.json();
 }
 
-export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps) {
+export function EventsFeed({ token, limit = 6, organizationId, city }: EventsFeedProps) {
   const [events, setEvents] = useState<EventbriteEvent[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +91,23 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
 
   const resolvedToken = useMemo(() => resolveToken(token), [token]);
   const tokenSource = useMemo(() => detectTokenSource(token), [token]);
+
+  // Determine desired city from prop -> env -> URL param
+  const resolvedCity = useMemo(() => {
+    const envCity = (import.meta as any).env?.VITE_EVENTBRITE_CITY as string | undefined;
+    const urlCity = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('event_city') : null;
+    return city || envCity || urlCity || null;
+  }, [city]);
+
+  function applyCityFilter(items: EventbriteEvent[]): EventbriteEvent[] {
+    if (!resolvedCity) return items;
+    const target = resolvedCity.toLowerCase();
+    return items.filter((ev) => {
+      const city = ev.venue?.address?.city?.toLowerCase() || '';
+      const localized = ev.venue?.address?.localized_address_display?.toLowerCase() || '';
+      return city.includes(target) || localized.includes(target);
+    });
+  }
 
   useEffect(() => {
     if (!resolvedToken) return;
@@ -105,8 +124,9 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
         try {
           data = await fetchJSON(`${base}/users/me/owned_events/?${q.toString()}`, resolvedToken, controller.signal);
           const items = Array.isArray(data?.events) ? data.events : [];
-          if (items.length > 0) {
-            setEvents(items);
+          const filtered = applyCityFilter(items);
+          if (filtered.length > 0) {
+            setEvents(filtered);
             return;
           }
           setDebug('No events in owned_events; trying other endpoints.');
@@ -118,8 +138,9 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
         try {
           data = await fetchJSON(`${base}/users/me/events/?${q.toString()}`, resolvedToken, controller.signal);
           const items = Array.isArray(data?.events) ? data.events : [];
-          if (items.length > 0) {
-            setEvents(items);
+          const filtered = applyCityFilter(items);
+          if (filtered.length > 0) {
+            setEvents(filtered);
             return;
           }
           setDebug((d) => (d ? d + ' | ' : '') + 'users/me/events empty; trying org.');
@@ -143,10 +164,38 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
           try {
             data = await fetchJSON(`${base}/organizations/${orgId}/events/?${q.toString()}`, resolvedToken, controller.signal);
             const items = Array.isArray(data?.events) ? data.events : [];
-            setEvents(items);
-            return;
+            const filtered = applyCityFilter(items);
+            if (filtered.length > 0) {
+              setEvents(filtered);
+              return;
+            }
+            // If city is specified but none match, continue to final error
           } catch (err: any) {
             setDebug((d) => (d ? d + ' | ' : '') + `org events failed: ${err.message}`);
+          }
+        }
+
+        // 4) Fallback: public search by city if provided
+        if (resolvedCity) {
+          try {
+            const nowIso = new Date().toISOString();
+            const sq = new URLSearchParams({
+              'location.address': resolvedCity,
+              'location.within': '25mi',
+              'start_date.range_start': nowIso,
+              expand: 'venue,logo',
+              sort_by: 'date',
+            });
+            data = await fetchJSON(`${base}/events/search/?${sq.toString()}`, resolvedToken, controller.signal);
+            const items = Array.isArray(data?.events) ? data.events : [];
+            const filtered = applyCityFilter(items);
+            if (filtered.length > 0) {
+              setEvents(filtered);
+              return;
+            }
+            setDebug((d) => (d ? d + ' | ' : '') + 'search returned no results');
+          } catch (err: any) {
+            setDebug((d) => (d ? d + ' | ' : '') + `search failed: ${err.message}`);
           }
         }
 
@@ -163,7 +212,7 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
     };
     tryFetch();
     return () => controller.abort();
-  }, [resolvedToken, organizationId]);
+  }, [resolvedToken, organizationId, resolvedCity]);
 
   const hasToken = Boolean(resolvedToken);
   const displayEvents = (events || []).slice(0, limit);

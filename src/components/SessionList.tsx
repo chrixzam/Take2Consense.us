@@ -154,7 +154,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         )}
 
         {/* Events feed at the bottom of the home page */}
-        <EventsFeed limit={6} />
+        <EventsFeed limit={6} city="San Francisco" />
       </div>
     </div>
     </div>
