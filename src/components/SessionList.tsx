@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus, Trash2 } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus, Trash2, DollarSign } from 'lucide-react';
+import DateRangeCalendar from './DateRangeCalendar';
 import { Navigation } from './Navigation';
 import { EventsFeed } from './EventsFeed';
 import type { GroupSession, FeedEvent } from '../types';
 import { CitySelector } from './CitySelector';
 import AgentPlanModal from './AgentPlanModal';
 import { planWithAgent } from '../agents/service';
+import { forwardGeocodeCity } from '../utils/geolocation';
 
 type Coords = { lat: number; lon: number };
 
@@ -36,6 +38,114 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
   const [suggestedPlaces, setSuggestedPlaces] = useState<Array<{ name: string; type: string; lat: number; lon: number; distKm: number; url: string }>>([]);
   const [suggestedEvents, setSuggestedEvents] = useState<Array<{ title: string; place?: string; start?: string; url?: string; category?: string }>>([]);
   const [selectedPlanEvents, setSelectedPlanEvents] = useState<FeedEvent[]>([]);
+  // Calendar state
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<'single' | 'range'>('single');
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>(undefined);
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(undefined);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const calendarPopoverRef = useRef<HTMLDivElement | null>(null);
+  const calendarButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Budget state
+  const [showBudget, setShowBudget] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<number | undefined>(undefined); // 1..5
+  const budgetPopoverRef = useRef<HTMLDivElement | null>(null);
+  const budgetButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Event location (independent from user's city)
+  const [showLocation, setShowLocation] = useState(false);
+  const [locationInput, setLocationInput] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [eventLocation, setEventLocation] = useState<{ label: string; lat: number; lon: number } | undefined>(undefined);
+  const [eventLocationCountry, setEventLocationCountry] = useState<string | undefined>(undefined);
+  const locationPopoverRef = useRef<HTMLDivElement | null>(null);
+  const locationButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Inferred location from idea text when user hasn't set an explicit location filter
+  const [ideaLocationLabel, setIdeaLocationLabel] = useState<string | undefined>(undefined);
+
+  // Very small heuristic to extract a location phrase from the idea text.
+  // Looks for patterns like: "brunch in Brooklyn", "museum near Paris", "dinner at Soho", "trip to London".
+  const extractLocationFromIdea = (text: string): string | undefined => {
+    if (!text) return undefined;
+    const lowered = ` ${text} `; // pad to simplify boundary checks
+    const patterns = [
+      /(\s|^)(in|at|near|around|to)\s+([A-Za-z][A-Za-z .'-]{1,48})(?=\s|$|[.,;!?:])/i,
+    ];
+    for (const re of patterns) {
+      const m = re.exec(lowered);
+      if (m && m[3]) {
+        const candidate = m[3].trim().replace(/[.,;!?:]+$/, '');
+        // Avoid obviously generic words that might match incorrectly
+        const stoplist = new Set(['me', 'us', 'there', 'here', 'somewhere']);
+        if (!stoplist.has(candidate.toLowerCase())) return candidate;
+      }
+    }
+    return undefined;
+  };
+
+  // Close calendar when clicking outside of the popover and the calendar icon
+  useEffect(() => {
+    if (!showCalendar) return;
+    const onDown = (e: MouseEvent) => {
+      const pop = calendarPopoverRef.current;
+      const btn = calendarButtonRef.current;
+      const target = e.target as Node | null;
+      if (pop && pop.contains(target as Node)) return;
+      if (btn && btn.contains(target as Node)) return;
+      setShowCalendar(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showCalendar]);
+
+  // Close budget popover on outside-click
+  useEffect(() => {
+    if (!showBudget) return;
+    const onDown = (e: MouseEvent) => {
+      const pop = budgetPopoverRef.current;
+      const btn = budgetButtonRef.current;
+      const target = e.target as Node | null;
+      if (pop && pop.contains(target as Node)) return;
+      if (btn && btn.contains(target as Node)) return;
+      setShowBudget(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showBudget]);
+
+  // Close location popover on outside-click
+  useEffect(() => {
+    if (!showLocation) return;
+    const onDown = (e: MouseEvent) => {
+      const pop = locationPopoverRef.current;
+      const btn = locationButtonRef.current;
+      const target = e.target as Node | null;
+      if (pop && pop.contains(target as Node)) return;
+      if (btn && btn.contains(target as Node)) return;
+      setShowLocation(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showLocation]);
+
+  const resolveLocation = async () => {
+    const q = locationInput.trim();
+    if (!q) return;
+    setLocationLoading(true);
+    try {
+      const res = await forwardGeocodeCity(q);
+      if (res?.coords) {
+        setEventLocation({ label: q, lat: res.coords.lat, lon: res.coords.lon });
+        setEventLocationCountry(res.countryCode);
+        setShowLocation(false);
+      } else {
+        alert('Could not find that location. Try a city or address.');
+      }
+    } catch {
+      alert('Could not look up that location.');
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const isSameFeedEvent = (a: FeedEvent, b: FeedEvent) => (
     a.title === b.title &&
@@ -55,7 +165,51 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
     }
     setPlanning(true);
     try {
-      const res = await planWithAgent(ideaText.trim(), 'planner', userCoords, currentCity, userCountry);
+      // Extract idea-mentioned location regardless, to detect conflicts.
+      const ideaLocAll = extractLocationFromIdea(ideaText.trim());
+
+      // If user selected an explicit location filter, it wins.
+      // Otherwise, if the idea mentions a location, prefer that.
+      // Else, fall back to the user's current city/coords.
+      const ideaLoc = !eventLocation ? ideaLocAll : undefined;
+      setIdeaLocationLabel(ideaLoc);
+
+      // If both an explicit filter and an idea-mentioned location exist, check country conflict.
+      if (eventLocation && ideaLocAll) {
+        try {
+          const ideaGeo = await forwardGeocodeCity(ideaLocAll);
+          const ideaCountry = ideaGeo?.countryCode;
+          if (ideaCountry && eventLocationCountry && ideaCountry !== eventLocationCountry) {
+            const proceed = window.confirm(
+              `Your idea mentions "${ideaLocAll}" but the location filter is set to "${eventLocation.label}".\nDo you want to continue with ${eventLocation.label}?`
+            );
+            if (!proceed) {
+              // User canceled due to conflict; stop planning so they can adjust.
+              setPlanning(false);
+              return;
+            }
+          }
+        } catch {}
+      }
+
+      const coordsForPlanning = eventLocation
+        ? { lat: eventLocation.lat, lon: eventLocation.lon }
+        : (ideaLoc ? undefined : userCoords);
+
+      const cityForPlanning = eventLocation
+        ? eventLocation.label
+        : (ideaLoc || currentCity);
+
+      const res = await planWithAgent(
+        ideaText.trim(),
+        'planner',
+        coordsForPlanning,
+        cityForPlanning,
+        userCountry,
+        selectedBudget,
+        selectedStartDate,
+        selectedEndDate,
+      );
       setPlanText(res.text);
       setPlanModel(res.model);
       setPlanProvider(res.provider);
@@ -94,9 +248,9 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Consense.us</h1>
           <p className="text-gray-600">Make group decisions effortlessly with your planning sessions</p>
 
-          {/* Idea input box under hero text (glassy, dark) */}
+          {/* Idea input box under hero text (glassy underline style; buttons under text) */}
           <div className="max-w-2xl mx-auto mt-6 px-2">
-            <div className="relative rounded-2xl border border-white/10 bg-gray-900/80 backdrop-blur-md shadow-xl shadow-blue-900/20">
+            <div className="relative rounded-2xl bg-gray-900 ring-1 ring-white/10 shadow-xl shadow-blue-900/20 pb-12">
               <input
                 type="text"
                 value={ideaText}
@@ -108,17 +262,143 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
                   }
                 }}
                 placeholder="Type your idea and we'll plan it together…"
-                className="w-full bg-transparent px-5 py-5 pr-44 text-lg text-gray-100 placeholder-gray-400 rounded-2xl outline-none focus:ring-2 focus:ring-cyan-500/60"
+                className="w-full bg-transparent px-5 pr-44 py-5 text-lg text-gray-100 placeholder-gray-400 rounded-2xl outline-none border-b border-white/15 focus:border-cyan-400/60"
                 aria-label="Type your idea"
               />
-              <button
-                type="button"
-                onClick={startPlanning}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-medium shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 disabled:opacity-60"
-                disabled={planning}
-              >
-                {planning ? 'Planning…' : 'Start planning'}
-              </button>
+              {/* Bottom action bar: icons on left, Start button on right */}
+              <div className="absolute left-3 right-2 bottom-2 flex items-center justify-between">
+                <div className="flex items-center gap-3 text-gray-300">
+                  <button
+                    type="button"
+                    className={`inline-flex items-center justify-center p-1.5 hover:text-white transition-colors ${ (selectedStartDate || selectedEndDate || showCalendar) ? 'text-blue-400' : '' }`}
+                    title="Add date"
+                    aria-label="Add date"
+                    onClick={() => setShowCalendar((s) => !s)}
+                    ref={calendarButtonRef}
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`inline-flex items-center justify-center p-1.5 hover:text-white transition-colors ${ (selectedBudget || showBudget) ? 'text-emerald-400' : '' }`}
+                    title="Add budget"
+                    aria-label="Add budget"
+                    onClick={() => setShowBudget((s) => !s)}
+                    ref={budgetButtonRef}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`inline-flex items-center justify-center p-1.5 hover:text-white transition-colors ${ (eventLocation || showLocation) ? 'text-fuchsia-400' : '' }`}
+                    title="Add location"
+                    aria-label="Add location"
+                    onClick={() => setShowLocation((s) => !s)}
+                    ref={locationButtonRef}
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={startPlanning}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-medium shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 disabled:opacity-60"
+                  disabled={planning}
+                >
+                  {planning ? 'Planning…' : 'Start planning'}
+                </button>
+              </div>
+              {showCalendar && (
+                <div ref={calendarPopoverRef} className="absolute left-2 top-full mt-2 z-30">
+                  <DateRangeCalendar
+                    month={calendarMonth}
+                    onMonthChange={(d) => setCalendarMonth(d)}
+                    mode={calendarMode}
+                    onModeChange={(m) => {
+                      setCalendarMode(m);
+                      // Reset range when switching modes for clarity
+                      if (m === 'single') {
+                        setSelectedEndDate(undefined);
+                      }
+                    }}
+                    startDate={selectedStartDate}
+                    endDate={selectedEndDate}
+                    onSelectDate={(d) => {
+                      if (calendarMode === 'single') {
+                        setSelectedStartDate(d);
+                        setSelectedEndDate(undefined);
+                      } else {
+                        if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+                          setSelectedStartDate(d);
+                          setSelectedEndDate(undefined);
+                        } else if (selectedStartDate && !selectedEndDate) {
+                          if (d < selectedStartDate) {
+                            setSelectedEndDate(selectedStartDate);
+                            setSelectedStartDate(d);
+                          } else {
+                            setSelectedEndDate(d);
+                          }
+                        }
+                      }
+                    }}
+                    className="w-[220px] md:w-[240px]"
+                    onApply={() => setShowCalendar(false)}
+                    onClear={() => {
+                      setSelectedStartDate(undefined);
+                      setSelectedEndDate(undefined);
+                    }}
+                  />
+                </div>
+              )}
+              {showLocation && (
+                <div ref={locationPopoverRef} className="absolute left-24 top-full mt-2 z-30">
+                  <div className="w-[260px] rounded-2xl bg-gray-900 ring-1 ring-white/10 shadow-xl text-gray-100 p-3">
+                    <div className="text-xs text-gray-300 mb-2">Event location</div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={locationInput}
+                        onChange={(e) => setLocationInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') resolveLocation(); }}
+                        placeholder="City or address"
+                        className="flex-1 bg-gray-800 text-gray-100 text-xs rounded-md px-2 py-1.5 placeholder-gray-400 outline-none border border-white/10 focus:border-cyan-400/40"
+                      />
+                      <button
+                        type="button"
+                        onClick={resolveLocation}
+                        disabled={locationLoading || !locationInput.trim()}
+                        className="px-2 py-1 text-xs rounded-md bg-cyan-600 text-white disabled:opacity-60"
+                      >
+                        {locationLoading ? '...' : 'Set'}
+                      </button>
+                    </div>
+                    {eventLocation && (
+                      <div className="mt-2 text-[11px] text-gray-400">Selected: {eventLocation.label}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {showBudget && (
+                <div ref={budgetPopoverRef} className="absolute left-12 top-full mt-2 z-30">
+                  <div className="w-[200px] rounded-2xl bg-gray-900 ring-1 ring-white/10 shadow-xl text-gray-100 p-3">
+                    <div className="text-xs text-gray-300 mb-2">Budget</div>
+                    <div className="flex items-center gap-2">
+                      {[1,2,3,4,5].map(level => (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => { setSelectedBudget(level); setShowBudget(false); }}
+                          className="p-1"
+                          aria-label={`Budget ${level} of 5`}
+                        >
+                          <DollarSign className={`w-5 h-5 ${selectedBudget && level <= selectedBudget ? 'text-emerald-400' : 'text-gray-400'} hover:text-white transition-colors`} />
+                        </button>
+                      ))}
+                      <span className="ml-2 text-[11px] text-gray-400">{selectedBudget ? `${selectedBudget}/5` : '—/5'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
             {planError && (
               <div className="text-left text-sm text-red-600 mt-2 px-2">{planError}</div>
@@ -255,6 +535,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           }
           setPlanModalOpen(false);
           setSelectedPlanEvents([]);
+          setIdeaLocationLabel(undefined);
         }}
         idea={ideaText}
         planText={planText}
@@ -262,6 +543,10 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         provider={planProvider}
         places={suggestedPlaces}
         events={suggestedEvents}
+        startDate={selectedStartDate}
+        endDate={selectedEndDate}
+        budgetLevel={selectedBudget}
+        locationLabel={eventLocation?.label || ideaLocationLabel}
         onAddFromPlan={(ev: FeedEvent) => {
           // Collect selected events locally for session creation on close, prevent duplicates
           setSelectedPlanEvents(prev => prev.some(e => isSameFeedEvent(e, ev)) ? prev : [...prev, ev]);
@@ -269,7 +554,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         onRemoveFromPlan={(ev: FeedEvent) => {
           setSelectedPlanEvents(prev => prev.filter(e => !isSameFeedEvent(e, ev)));
         }}
-        originCoords={userCoords}
+        originCoords={eventLocation ? { lat: eventLocation.lat, lon: eventLocation.lon } : userCoords}
       />
     </div>
     </div>

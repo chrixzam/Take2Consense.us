@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, MapPin, Settings, ArrowLeft } from 'lucide-react';
+import { MapPin, Settings, ArrowLeft } from 'lucide-react';
 import Logo from './Logo';
 
 interface NavigationProps {
@@ -22,8 +22,8 @@ export function Navigation({
   showBackButton = false,
   onBack,
   onLogoClick,
-  sessionName,
-  memberCount,
+  // sessionName,
+  // memberCount,
   currentCity,
   onCityEdit,
   onSettings
@@ -48,19 +48,10 @@ export function Navigation({
                   <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     Consense.us
                   </h1>
-                  {sessionName && (
-                    <p className="text-sm text-gray-500 -mt-1">{sessionName}</p>
-                  )}
                 </div>
               </a>
 
-              {/* Session info */}
-              {sessionName && memberCount && (
-                <div className="hidden sm:flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded-full">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-700">{memberCount} members</span>
-                </div>
-              )}
+              {/* Session info removed from header */}
             </div>
 
             {/* Right section */}

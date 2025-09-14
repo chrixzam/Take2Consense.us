@@ -204,7 +204,16 @@ async function fetchRelevantEvents(idea: string, coords?: Coords, country?: stri
   }
 }
 
-export async function planWithAgent(idea: string, agentId = 'planner', coords?: Coords, city?: string, country?: string): Promise<PlanResult> {
+export async function planWithAgent(
+  idea: string,
+  agentId = 'planner',
+  coords?: Coords,
+  city?: string,
+  country?: string,
+  budgetLevel?: number,
+  startDate?: Date,
+  endDate?: Date,
+): Promise<PlanResult> {
   const agent = registry.get(agentId);
   if (!agent) {
     return { text: 'Agent not found.', source: 'local' };
@@ -261,6 +270,19 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
         .join('\n')
     : '';
 
+  // Optional user constraints
+  const budgetContext = Number.isFinite(budgetLevel) && budgetLevel && budgetLevel >= 1 && budgetLevel <= 5
+    ? `\n\nBudget preference: ${'$'.repeat(budgetLevel)} (${budgetLevel}/5).`
+    : '';
+  const dateContext = startDate || endDate
+    ? `\n\nDate preference: ` +
+      (startDate && endDate
+        ? `${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}`
+        : startDate
+        ? `${new Date(startDate).toLocaleDateString()}`
+        : `${new Date(endDate as Date).toLocaleDateString()}`)
+    : '';
+
   // Prefer calling a backend proxy if configured to avoid CORS and protect keys
   const apiUrl = import.meta.env.VITE_AGENT_API_URL as string | undefined;
   if (apiUrl) {
@@ -268,7 +290,7 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, userInput: idea + nearbyContext + eventsContext, mode: 'base', coords: usedCoords, city, country }),
+        body: JSON.stringify({ agentId, userInput: idea + nearbyContext + eventsContext + budgetContext + dateContext, mode: 'base', coords: usedCoords, city, country, budgetLevel, startDate, endDate }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -300,7 +322,7 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
           model: (model || 'claude-3-5-sonnet-20240620').replace(/^anthropic\//,''),
           max_tokens: 800,
           system: prep.preparedPrompt.split('\n\n[User]\n')[0],
-          messages: [ { role: 'user', content: idea + nearbyContext + eventsContext } ],
+          messages: [ { role: 'user', content: idea + nearbyContext + eventsContext + budgetContext + dateContext } ],
         }),
       });
       if (response.ok) {

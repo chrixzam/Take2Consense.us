@@ -17,9 +17,15 @@ interface AgentPlanModalProps {
   onAddFromPlan?: (ev: FeedEvent) => void;
   onRemoveFromPlan?: (ev: FeedEvent) => void;
   originCoords?: Coords;
+  startDate?: Date;
+  endDate?: Date;
+  budgetLevel?: number;
+  locationLabel?: string;
+  // Optional custom content to render directly under the map
+  mapFooter?: React.ReactNode;
 }
 
-export default function AgentPlanModal({ open, onClose, idea, planText, model, provider, places = [], events = [], onAddFromPlan, onRemoveFromPlan, originCoords }: AgentPlanModalProps) {
+export default function AgentPlanModal({ open, onClose, idea, planText, model, provider, places = [], events = [], onAddFromPlan, onRemoveFromPlan, originCoords, startDate, endDate, budgetLevel, locationLabel, mapFooter }: AgentPlanModalProps) {
   const mapRef = React.useRef<HTMLDivElement | null>(null);
   // Use any to avoid requiring @types/google.maps
   const mapInstanceRef = React.useRef<any>(null);
@@ -197,11 +203,50 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
         <div className="p-5 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">Planning Draft</h3>
           <p className="text-sm text-gray-500 mt-1">Idea: {idea || 'Untitled idea'}</p>
+          {(startDate || endDate) && (
+            <p className="text-sm text-gray-600 mt-1">
+              Dates: {startDate ? new Date(startDate).toLocaleDateString() : ''}
+              {endDate ? ` – ${new Date(endDate).toLocaleDateString()}` : ''}
+            </p>
+          )}
+          {budgetLevel && (
+            <p className="text-sm text-gray-600 mt-1">
+              Budget: {'$'.repeat(Math.min(5, Math.max(1, budgetLevel)))} ({Math.min(5, Math.max(1, budgetLevel))}/5)
+            </p>
+          )}
+          {locationLabel && (
+            <p className="text-sm text-gray-600 mt-1">Location: {locationLabel}</p>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4">
           <div className="md:col-span-2 p-0 md:p-5 max-h-[60vh] overflow-auto border-b md:border-b-0 md:border-r border-gray-100">
             {/* Map container (optional; loads when API key present) */}
             <div className="w-full h-48 md:rounded-md bg-gray-100" ref={mapRef} />
+            {/* Small subsection under the map (customizable) */}
+            <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
+              {mapFooter ? (
+                mapFooter
+              ) : (
+                <div className="text-sm text-gray-700 flex flex-wrap gap-x-4 gap-y-1">
+                  <span>
+                    Places: <span className="font-medium">{places.length}</span>
+                  </span>
+                  <span>
+                    Events: <span className="font-medium">{events.length}</span>
+                  </span>
+                  {locationLabel && (
+                    <span>
+                      Area: <span className="font-medium">{locationLabel}</span>
+                    </span>
+                  )}
+                  {originCoords && (
+                    <span>
+                      Origin: <span className="font-medium">{originCoords.lat.toFixed(3)}, {originCoords.lon.toFixed(3)}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="p-5 whitespace-pre-wrap text-gray-800">
               {renderPlanWithLinks(planText)}
             </div>
