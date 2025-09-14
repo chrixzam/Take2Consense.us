@@ -265,7 +265,7 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
             {/* Map container - only show in demo */}
             {window.location.pathname === '/demo' && (
               <img 
-                src="/fiji-map.jpg"
+                src="/fiji-water-sports-map.jpg"
                 alt="Fiji Water Sports Map"
                 className="w-full h-48 md:rounded-md object-cover"
               />
