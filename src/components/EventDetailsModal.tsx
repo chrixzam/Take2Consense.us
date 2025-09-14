@@ -11,7 +11,7 @@ interface EventDetailsModalProps {
   onDelete?: (eventId: string) => void;
 }
 
-export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, onVote, onDelete }: EventDetailsModalProps) {
+export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, onVote }: EventDetailsModalProps) {
   if (!isOpen || !event) return null;
 
   const formatDateLong = (date: Date) => {
