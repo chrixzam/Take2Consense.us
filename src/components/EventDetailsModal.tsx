@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, MapPin, DollarSign, Clock, ThumbsUp, X, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, ThumbsUp, X } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventDetailsModalProps {
@@ -43,18 +43,6 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
             <div className="text-sm text-gray-500">Proposed by {event.suggestedBy}</div>
           </div>
           <div className="flex items-center gap-2">
-            {onDelete && (
-              <button
-                onClick={() => {
-                  if (window.confirm('Delete this idea? This cannot be undone.')) onDelete(event.id);
-                }}
-                title="Delete idea"
-                aria-label="Delete idea"
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            )}
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
               <X className="w-5 h-5" />
             </button>
