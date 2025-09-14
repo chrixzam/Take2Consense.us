@@ -11,7 +11,28 @@ import { detectCity, forwardGeocodeCity } from './utils/geolocation';
 import { categorizeEvent } from './utils/eventCategories';
 import Toast from './components/Toast';
 
+// Simple router to handle demo path
+const useRouter = () => {
+  const [path, setPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (newPath: string) => {
+    window.history.pushState({}, '', newPath);
+    setPath(newPath);
+  };
+
+  return { path, navigate };
+};
+
 function App() {
+  const { path, navigate } = useRouter();
+  const isDemo = path === '/demo';
+
   const [sessions, setSessions] = useState<GroupSession[]>([]);
   const [currentSession, setCurrentSession] = useState<GroupSession | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -29,10 +50,17 @@ function App() {
   const [pendingFeedEvent, setPendingFeedEvent] = useState<FeedEvent | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
+  // Demo-specific state
+  const [demoSessions, setDemoSessions] = useState<GroupSession[]>([]);
+
+  const currentSessions = isDemo ? demoSessions : sessions;
+  const setCurrentSessions = isDemo ? setDemoSessions : setSessions;
   // Load sessions and user from localStorage
   useEffect(() => {
     const savedSessions = localStorage.getItem('groupSessions');
+    const savedDemoSessions = localStorage.getItem('demoGroupSessions');
     let parsedSessions = [];
+    let parsedDemoSessions = [];
     
     if (savedSessions) {
       parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
@@ -52,102 +80,124 @@ function App() {
       }));
     }
     
+    if (savedDemoSessions) {
+      parsedDemoSessions = JSON.parse(savedDemoSessions).map((session: any) => ({
+        ...session,
+        shareId: session.shareId || generateSessionId(),
+        sessionStartDate: session.sessionStartDate ? new Date(session.sessionStartDate) : undefined,
+        sessionEndDate: session.sessionEndDate ? new Date(session.sessionEndDate) : undefined,
+        createdAt: new Date(session.createdAt),
+        updatedAt: new Date(session.updatedAt),
+        events: session.events.map((event: any) => ({
+          ...event,
+          date: new Date(event.date),
+          createdAt: new Date(event.createdAt)
+        }))
+      }));
+    }
+    
     // Add mock session if no sessions exist
+    const createMockSession = () => ({
+      id: 'mock-session-1',
+      shareId: 'awesome-weekend-sf-123',
+      name: 'San Francisco Weekend Adventure',
+      description: 'Planning an epic weekend in SF with friends',
+      members: [
+        { id: '1', name: 'Alex', avatar: undefined },
+        { id: '2', name: 'Sarah', avatar: undefined },
+        { id: '3', name: 'Mike', avatar: undefined },
+        { id: '4', name: 'Emma', avatar: undefined }
+      ],
+      city: 'San Francisco, CA',
+      userStatedLocation: 'San Francisco Bay Area',
+      sessionStartDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next week
+      sessionEndDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000), // Next week + 2 days
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+      events: [
+        {
+          id: 'event-1',
+          title: 'Golden Gate Bridge Walk',
+          description: 'Walk across the iconic Golden Gate Bridge and enjoy the stunning views of SF Bay',
+          category: 'Outdoor',
+          location: 'Golden Gate Bridge, San Francisco',
+          budget: 0,
+          duration: 3,
+          suggestedBy: 'Alex',
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          votes: 4,
+          voters: ['1', '2', '3', '4'],
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: 'event-2',
+          title: 'Dim Sum in Chinatown',
+          description: 'Authentic dim sum brunch at one of the best spots in Chinatown',
+          category: 'Food & Dining',
+          location: 'Chinatown, San Francisco',
+          budget: 35,
+          duration: 2,
+          suggestedBy: 'Sarah',
+          date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+          votes: 3,
+          voters: ['1', '2', '4'],
+          createdAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: 'event-3',
+          title: 'SF Museum of Modern Art',
+          description: 'Explore contemporary art and special exhibitions at SFMOMA',
+          category: 'Culture',
+          location: 'SFMOMA, San Francisco',
+          budget: 25,
+          duration: 3,
+          suggestedBy: 'Emma',
+          date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+          votes: 2,
+          voters: ['2', '3'],
+          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+        },
+        {
+          id: 'event-4',
+          title: 'Alcatraz Island Tour',
+          description: 'Take the ferry to the famous former prison island and learn about its history',
+          category: 'Culture',
+          location: 'Alcatraz Island, San Francisco',
+          budget: 45,
+          duration: 4,
+          suggestedBy: 'Mike',
+          date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
+          votes: 3,
+          voters: ['1', '3', '4'],
+          createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000)
+        },
+        {
+          id: 'event-5',
+          title: 'Sunset at Twin Peaks',
+          description: 'Watch the sunset over the city from one of the best viewpoints in SF',
+          category: 'Outdoor',
+          location: 'Twin Peaks, San Francisco',
+          budget: 0,
+          duration: 2,
+          suggestedBy: 'Alex',
+          date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
+          votes: 4,
+          voters: ['1', '2', '3', '4'],
+          createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
+        }
+      ]
+    });
+
     if (parsedSessions.length === 0) {
-      const mockSession: GroupSession = {
-        id: 'mock-session-1',
-        shareId: 'awesome-weekend-sf-123',
-        name: 'San Francisco Weekend Adventure',
-        description: 'Planning an epic weekend in SF with friends',
-        members: [
-          { id: '1', name: 'Alex', avatar: undefined },
-          { id: '2', name: 'Sarah', avatar: undefined },
-          { id: '3', name: 'Mike', avatar: undefined },
-          { id: '4', name: 'Emma', avatar: undefined }
-        ],
-        city: 'San Francisco, CA',
-        userStatedLocation: 'San Francisco Bay Area',
-        sessionStartDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next week
-        sessionEndDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000), // Next week + 2 days
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-        events: [
-          {
-            id: 'event-1',
-            title: 'Golden Gate Bridge Walk',
-            description: 'Walk across the iconic Golden Gate Bridge and enjoy the stunning views of SF Bay',
-            category: 'Outdoor',
-            location: 'Golden Gate Bridge, San Francisco',
-            budget: 0,
-            duration: 3,
-            suggestedBy: 'Alex',
-            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            votes: 4,
-            voters: ['1', '2', '3', '4'],
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 'event-2',
-            title: 'Dim Sum in Chinatown',
-            description: 'Authentic dim sum brunch at one of the best spots in Chinatown',
-            category: 'Food & Dining',
-            location: 'Chinatown, San Francisco',
-            budget: 35,
-            duration: 2,
-            suggestedBy: 'Sarah',
-            date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
-            votes: 3,
-            voters: ['1', '2', '4'],
-            createdAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 'event-3',
-            title: 'SF Museum of Modern Art',
-            description: 'Explore contemporary art and special exhibitions at SFMOMA',
-            category: 'Culture',
-            location: 'SFMOMA, San Francisco',
-            budget: 25,
-            duration: 3,
-            suggestedBy: 'Emma',
-            date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
-            votes: 2,
-            voters: ['2', '3'],
-            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 'event-4',
-            title: 'Alcatraz Island Tour',
-            description: 'Take the ferry to the famous former prison island and learn about its history',
-            category: 'Culture',
-            location: 'Alcatraz Island, San Francisco',
-            budget: 45,
-            duration: 4,
-            suggestedBy: 'Mike',
-            date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
-            votes: 3,
-            voters: ['1', '3', '4'],
-            createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000)
-          },
-          {
-            id: 'event-5',
-            title: 'Sunset at Twin Peaks',
-            description: 'Watch the sunset over the city from one of the best viewpoints in SF',
-            category: 'Outdoor',
-            location: 'Twin Peaks, San Francisco',
-            budget: 0,
-            duration: 2,
-            suggestedBy: 'Alex',
-            date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
-            votes: 4,
-            voters: ['1', '2', '3', '4'],
-            createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-          }
-        ]
-      };
-      parsedSessions = [mockSession];
+      parsedSessions = [createMockSession()];
+    }
+    
+    if (parsedDemoSessions.length === 0) {
+      parsedDemoSessions = [{ ...createMockSession(), id: 'demo-session-1', shareId: 'demo-weekend-sf-456' }];
     }
     
     setSessions(parsedSessions);
+    setDemoSessions(parsedDemoSessions);
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       try {
@@ -162,7 +212,10 @@ function App() {
     if (sessions.length > 0) {
       localStorage.setItem('groupSessions', JSON.stringify(sessions));
     }
-  }, [sessions]);
+    if (demoSessions.length > 0) {
+      localStorage.setItem('demoGroupSessions', JSON.stringify(demoSessions));
+    }
+  }, [sessions, demoSessions]);
 
   // Persist user profile
   useEffect(() => {
@@ -273,7 +326,7 @@ function App() {
 
   const handleJoinSession = (sessionId: string, userName: string) => {
     // Find session by shareId
-    const sessionToJoin = sessions.find(session => session.shareId === sessionId);
+    const sessionToJoin = currentSessions.find(session => session.shareId === sessionId);
     
     if (!sessionToJoin) {
       setJoinError('Session not found. Please check the session ID and try again.');
@@ -296,7 +349,7 @@ function App() {
         updatedAt: new Date()
       };
       
-      setSessions(prev => prev.map(session => 
+      setCurrentSessions(prev => prev.map(session => 
         session.id === sessionToJoin.id ? updatedSession : session
       ));
       
@@ -313,17 +366,18 @@ function App() {
   };
 
   const handleUpdateSession = (updatedSession: GroupSession) => {
-    setSessions(prev => prev.map(session => 
+    setCurrentSessions(prev => prev.map(session => 
       session.id === updatedSession.id ? updatedSession : session
     ));
     setCurrentSession(updatedSession);
   };
 
   const handleDeleteSession = (sessionId: string) => {
-    setSessions(prev => {
+    setCurrentSessions(prev => {
       const updated = prev.filter(s => s.id !== sessionId);
       // Persist even when empty to ensure deletion sticks
-      localStorage.setItem('groupSessions', JSON.stringify(updated));
+      const storageKey = isDemo ? 'demoGroupSessions' : 'groupSessions';
+      localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
     if (currentSession && currentSession.id === sessionId) {
@@ -378,7 +432,7 @@ function App() {
       updatedAt: new Date(),
     };
 
-    const ideas: EventIdea[] = (feedEvents || []).map((ev) => {
+    setCurrentSessions(prev => [newSession, ...prev]);
       const start = ev.start ? new Date(ev.start) : sessionStartDate || new Date();
       const end = ev.end ? new Date(ev.end) : null;
       const duration = end && !Number.isNaN(end.getTime()) && end > start
@@ -436,7 +490,10 @@ function App() {
       <>
         <SessionCreationForm
           onCreateSession={handleCreateSession}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={() => {
+            setShowCreateForm(false);
+            if (isDemo && path !== '/demo') navigate('/demo');
+          }}
           currentCity={currentCity}
         />
         <VersionBadge />
@@ -450,7 +507,11 @@ function App() {
       <>
         <SessionJoinForm
           onJoinSession={handleJoinSession}
-          onCancel={() => { setShowJoinForm(false); setJoinError(''); }}
+          onCancel={() => {
+            setShowJoinForm(false);
+            setJoinError('');
+            if (isDemo && path !== '/demo') navigate('/demo');
+          }}
           error={joinError}
         />
         <VersionBadge />
@@ -465,7 +526,10 @@ function App() {
         <UserProfile
           user={currentUser}
           onUpdateUser={setCurrentUser}
-          onBack={() => setShowProfile(false)}
+          onBack={() => {
+            setShowProfile(false);
+            if (isDemo && path !== '/demo') navigate('/demo');
+          }}
         />
         <VersionBadge />
       </>
@@ -493,7 +557,7 @@ function App() {
   return (
     <>
       <SessionList
-        sessions={sessions}
+        sessions={currentSessions}
         onSelectSession={handleSelectSession}
         onCreateNew={() => setShowCreateForm(true)}
         onJoinSession={() => setShowJoinForm(true)}

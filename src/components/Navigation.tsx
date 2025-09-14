@@ -40,7 +40,20 @@ export function Navigation({
               {/* Brand */}
               <a
                 href="/"
-                onClick={(e) => { if (onLogoClick) { e.preventDefault(); onLogoClick(); } }}
+                onClick={(e) => { 
+                  if (onLogoClick) { 
+                    e.preventDefault(); 
+                    onLogoClick(); 
+                  } else {
+                    // Allow natural navigation to home when no handler provided
+                    const currentPath = window.location.pathname;
+                    if (currentPath === '/demo') {
+                      e.preventDefault();
+                      window.history.pushState({}, '', '/demo');
+                      window.location.reload();
+                    }
+                  }
+                }}
                 className="flex items-center space-x-3 hover:opacity-90 transition-opacity"
                 aria-label="Go to home"
                 title="Go to home"
@@ -48,7 +61,7 @@ export function Navigation({
                 <Logo size={40} />
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Consense.us
+                    {window.location.pathname === '/demo' ? 'Consense.us Demo' : 'Consense.us'}
                   </h1>
                 </div>
               </a>
