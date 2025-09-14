@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigation } from './Navigation';
 import { User } from '../types';
-import { Camera, Plus, User2 } from 'lucide-react';
+import { Plus, User2 } from 'lucide-react';
 
 interface UserProfileProps {
   user: User;
@@ -75,7 +75,7 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
   };
 
   const AvatarPreview = () => (
-    <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-3xl font-semibold text-gray-700 overflow-hidden">
+    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-3xl font-semibold text-gray-700 overflow-hidden">
       {avatar ? (
         <img
           src={avatar}
@@ -87,15 +87,6 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
       ) : (
         <User2 className="w-10 h-10 text-gray-400" />
       )}
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
-        aria-label="Upload photo"
-        title="Upload photo"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
     </div>
   );
 
@@ -112,21 +103,8 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
 
           <div className="p-6 space-y-6">
             {/* Avatar */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <AvatarPreview />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-            <div className="flex items-center space-x-2">
-              <div className="relative flex-1">
-                <input
-                  type="url"
-                  placeholder="https://example.com/me.jpg"
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <Camera className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
-              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -134,23 +112,20 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
                 className="hidden"
                 onChange={handleFileChange}
               />
-              {avatar && (
-                <button
-                  className="text-sm text-gray-600 hover:text-gray-800"
-                  onClick={() => { setAvatar(''); setPreviewError(null); }}
-                >
-                  Remove
-                </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
+                aria-label="Upload photo"
+                title="Upload photo"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              {previewError && (
+                <p className="text-sm text-red-600">{previewError}</p>
               )}
             </div>
-            {previewError && (
-              <p className="text-sm text-red-600 mt-1">{previewError}</p>
-            )}
-            {!previewError && (
-              <p className="text-xs text-gray-500 mt-1">You can paste an image URL or upload a photo. Images are resized to 512px for storage.</p>
-            )}
           </div>
-            </div>
 
             {/* Name */}
             <div>
@@ -181,7 +156,6 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
               </button>
             </div>
           </div>
-        </div>
       </main>
     </div>
   );
