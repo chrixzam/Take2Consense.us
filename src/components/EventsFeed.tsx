@@ -39,6 +39,17 @@ function resolveToken(propToken?: string): string | null {
   return propToken || envToken || lsToken || urlToken || null;
 }
 
+function detectTokenSource(propToken?: string): string | null {
+  const envToken = (import.meta as any).env?.VITE_EVENTBRITE_TOKEN as string | undefined;
+  const lsToken = typeof window !== 'undefined' ? localStorage.getItem('eventbrite_token') : null;
+  const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('eventbrite_token') : null;
+  if (propToken) return 'prop';
+  if (envToken) return 'env';
+  if (lsToken) return 'localStorage';
+  if (urlToken) return 'url';
+  return null;
+}
+
 function formatDate(isoLocal: string): string {
   const d = new Date(isoLocal);
   return d.toLocaleString(undefined, {
@@ -73,6 +84,7 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
   const [debug, setDebug] = useState<string | null>(null);
 
   const resolvedToken = useMemo(() => resolveToken(token), [token]);
+  const tokenSource = useMemo(() => detectTokenSource(token), [token]);
 
   useEffect(() => {
     if (!resolvedToken) return;
@@ -156,7 +168,12 @@ export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps
     <section className="max-w-4xl mx-auto mt-12">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Upcoming Events</h2>
-        <div className="text-sm text-gray-500">Powered by Eventbrite</div>
+        <div className="text-sm text-gray-500">
+          Powered by Eventbrite
+          {hasToken && tokenSource && (
+            <span className="ml-2 text-xs text-gray-400">(token: {tokenSource})</span>
+          )}
+        </div>
       </div>
 
       {!hasToken && (
