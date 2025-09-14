@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, DollarSign, Clock, Calendar, Heart, User, Trash2, ExternalLink } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Calendar, ThumbsUp, User, Trash2, ExternalLink } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventCardProps {
@@ -133,14 +133,12 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onVote(event.id); }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              hasVoted
-                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-red-600'
-            }`}
+            className="group flex items-center justify-center p-2 rounded-lg transition-colors hover:bg-gray-100"
+            aria-pressed={hasVoted}
+            aria-label={hasVoted ? 'Remove upvote' : 'Upvote'}
+            title={hasVoted ? 'Remove upvote' : 'Upvote'}
           >
-            <Heart className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`} />
-            <span>{hasVoted ? 'Voted' : 'Vote'}</span>
+            <ThumbsUp className={`w-5 h-5 ${hasVoted ? 'text-green-600' : 'text-gray-600 group-hover:text-green-600'}`} />
           </button>
         </div>
       </div>
