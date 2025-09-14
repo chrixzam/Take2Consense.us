@@ -6,6 +6,7 @@ import { SessionView } from './components/SessionView';
 import { User, GroupSession } from './types';
 import VersionBadge from './components/VersionBadge';
 import { generateSessionId } from './utils/sessionId';
+import { detectCity } from './utils/geolocation';
 
 function App() {
   const [sessions, setSessions] = useState<GroupSession[]>([]);
@@ -15,6 +16,7 @@ function App() {
   const [joinError, setJoinError] = useState<string>('');
   const [currentUser] = useState<User>({ id: '1', name: 'You' });
   const [currentCity, setCurrentCity] = useState('San Francisco, CA');
+  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   // Load sessions from localStorage
   useEffect(() => {
@@ -43,15 +45,34 @@ function App() {
     }
   }, [sessions]);
 
-  // Auto-detect location on first load
+  // Auto-detect location on first load (with caching)
   useEffect(() => {
-    const hasDetectedLocation = localStorage.getItem('detectedLocation');
-    if (!hasDetectedLocation && navigator.geolocation) {
-      // In a real app, you'd detect the actual location
-      // For demo purposes, we'll just mark it as detected
-      localStorage.setItem('detectedLocation', 'true');
+    const cached = localStorage.getItem('userLocation');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as { city: string; coords: { lat: number; lon: number }; ts: number };
+        // Use cached value if within 24h
+        if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) {
+          setCurrentCity(parsed.city);
+          setUserCoords(parsed.coords);
+        }
+      } catch {}
     }
-    
+    if (!cached && navigator.geolocation) {
+      (async () => {
+        const result = await detectCity();
+        if (result) {
+          setCurrentCity(result.city);
+          setUserCoords(result.coords);
+          localStorage.setItem(
+            'userLocation',
+            JSON.stringify({ city: result.city, coords: result.coords, ts: Date.now() })
+          );
+          localStorage.setItem('detectedLocation', 'true');
+        }
+      })();
+    }
+
     // Check for join parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const joinSessionId = urlParams.get('join');
@@ -191,6 +212,20 @@ function App() {
         onSelectSession={handleSelectSession}
         onCreateNew={() => setShowCreateForm(true)}
         onJoinSession={() => setShowJoinForm(true)}
+        userCoords={userCoords || undefined}
+        currentCity={currentCity}
+        onCityChange={(city) => {
+          setCurrentCity(city);
+          // also refresh cache with same coords if available
+          const cached = localStorage.getItem('userLocation');
+          let coords = userCoords || undefined;
+          if (cached) {
+            try {
+              coords = JSON.parse(cached)?.coords;
+            } catch {}
+          }
+          localStorage.setItem('userLocation', JSON.stringify({ city, coords, ts: Date.now() }));
+        }}
       />
       <VersionBadge />
     </>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation } from 'lucide-react';
+import { detectCity } from '../utils/geolocation';
 
 interface CitySelectorProps {
   currentCity: string;
@@ -15,19 +16,12 @@ export function CitySelector({ currentCity, onCityChange, onClose, isOpen }: Cit
   const detectLocation = async () => {
     setIsDetecting(true);
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 10000,
-          enableHighAccuracy: true
-        });
-      });
-
-      // Use reverse geocoding (mock implementation for demo)
-      // In production, you'd use a service like Google Maps Geocoding API
-      const mockCities = ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ'];
-      const detectedCity = mockCities[Math.floor(Math.random() * mockCities.length)];
-      
-      setCity(detectedCity);
+      const result = await detectCity();
+      if (result?.city) {
+        setCity(result.city);
+      } else {
+        throw new Error('Could not resolve city');
+      }
     } catch (error) {
       console.error('Error detecting location:', error);
       alert('Could not detect your location. Please enter your city manually.');

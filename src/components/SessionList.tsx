@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus } from 'lucide-react';
 import { Navigation } from './Navigation';
 import EventsFeed from './EventsFeed';
 import { GroupSession } from '../types';
+import { CitySelector } from './CitySelector';
+
+type Coords = { lat: number; lon: number };
 
 interface SessionListProps {
   sessions: GroupSession[];
   onSelectSession: (session: GroupSession) => void;
   onCreateNew: () => void;
   onJoinSession: () => void;
+  userCoords?: Coords;
+  currentCity: string;
+  onCityChange: (city: string) => void;
 }
 
-export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession }: SessionListProps) {
+export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, userCoords, currentCity, onCityChange }: SessionListProps) {
+  const [showCitySelector, setShowCitySelector] = useState(false);
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffTime = now.getTime() - new Date(date).getTime();
@@ -26,7 +33,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+      <Navigation currentCity={currentCity} onCityEdit={() => setShowCitySelector(true)} />
       
       <div className="p-4">
       <div className="max-w-4xl mx-auto">
@@ -153,16 +160,19 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           </div>
         )}
 
-        {/* Events Feed (example: jazz concerts near Central Park, NYC) */}
+        {/* Events Feed (defaults to user's location if available) */}
         <EventsFeed 
           query="jazz"
           country="US"
           category="concerts"
-          locationAroundOrigin="40.782409,-73.971885"
-          locationAroundOffset="5mi"
-          // startAroundOrigin and activeGte can be set to specific dates, e.g. '2020-02-20'
-          // startAroundOrigin="2020-02-20"
-          // activeGte="2020-02-20"
+          locationAroundOrigin={userCoords ? `${userCoords.lat},${userCoords.lon}` : '40.782409,-73.971885'}
+          locationAroundOffset={userCoords ? '10km' : '5mi'}
+        />
+        <CitySelector
+          currentCity={currentCity}
+          onCityChange={onCityChange}
+          onClose={() => setShowCitySelector(false)}
+          isOpen={showCitySelector}
         />
       </div>
     </div>

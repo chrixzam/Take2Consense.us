@@ -92,7 +92,19 @@ export function EventsFeed({
     return () => {
       alive = false;
     };
-  }, [query, limit, canFetch, token]);
+  }, [
+    query,
+    limit,
+    country,
+    category,
+    activeGte,
+    activeLte,
+    startAroundOrigin,
+    locationAroundOrigin,
+    locationAroundOffset,
+    canFetch,
+    token,
+  ]);
 
   const formatDate = (iso?: string) => {
     if (!iso) return '';
