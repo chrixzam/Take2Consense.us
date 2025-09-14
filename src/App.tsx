@@ -4,6 +4,7 @@ import { SessionCreationForm } from './components/SessionCreationForm';
 import { SessionJoinForm } from './components/SessionJoinForm';
 import { SessionView } from './components/SessionView';
 import { User, GroupSession } from './types';
+import VersionBadge from './components/VersionBadge';
 import { generateSessionId } from './utils/sessionId';
 
 function App() {
@@ -142,45 +143,57 @@ function App() {
   // Show create form
   if (showCreateForm) {
     return (
-      <SessionCreationForm
-        onCreateSession={handleCreateSession}
-        onCancel={() => setShowCreateForm(false)}
-        currentCity={currentCity}
-      />
+      <>
+        <SessionCreationForm
+          onCreateSession={handleCreateSession}
+          onCancel={() => setShowCreateForm(false)}
+          currentCity={currentCity}
+        />
+        <VersionBadge />
+      </>
     );
   }
 
   // Show join form
   if (showJoinForm) {
     return (
-      <SessionJoinForm
-        onJoinSession={handleJoinSession}
-        onCancel={() => { setShowJoinForm(false); setJoinError(''); }}
-        error={joinError}
-      />
+      <>
+        <SessionJoinForm
+          onJoinSession={handleJoinSession}
+          onCancel={() => { setShowJoinForm(false); setJoinError(''); }}
+          error={joinError}
+        />
+        <VersionBadge />
+      </>
     );
   }
 
   // Show session view if one is selected
   if (currentSession) {
     return (
-      <SessionView
-        session={currentSession}
-        currentUser={currentUser}
-        onUpdateSession={handleUpdateSession}
-        onBack={handleBackToSessions}
-      />
+      <>
+        <SessionView
+          session={currentSession}
+          currentUser={currentUser}
+          onUpdateSession={handleUpdateSession}
+          onBack={handleBackToSessions}
+        />
+        <VersionBadge />
+      </>
     );
   }
 
   // Show session list
   return (
-    <SessionList
-      sessions={sessions}
-      onSelectSession={handleSelectSession}
-      onCreateNew={() => setShowCreateForm(true)}
-      onJoinSession={() => setShowJoinForm(true)}
-    />
+    <>
+      <SessionList
+        sessions={sessions}
+        onSelectSession={handleSelectSession}
+        onCreateNew={() => setShowCreateForm(true)}
+        onJoinSession={() => setShowJoinForm(true)}
+      />
+      <VersionBadge />
+    </>
   );
 }
 
