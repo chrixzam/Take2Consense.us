@@ -52,12 +52,12 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ease-out">
       {!isExpanded ? (
-        <div>
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="w-full p-6 text-left hover:bg-gray-50 transition-colors group"
-          >
-            <div className="flex items-center space-x-3">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="flex items-center space-x-3 text-left group"
+            >
               <div className="flex items-center justify-center w-10 h-10 bg-blue-100 group-hover:bg-blue-200 rounded-xl transition-colors">
                 <Plus className="w-5 h-5 text-blue-600" />
               </div>
@@ -65,19 +65,17 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
                 <p className="text-lg font-medium text-gray-900">Propose an idea for {sessionName}</p>
                 <p className="text-sm text-gray-500">Share your suggestion with this planning session</p>
               </div>
-            </div>
-          </button>
-          {onOpenRandom && (
-            <div className="px-6 pb-4 -mt-2 flex justify-end">
+            </button>
+            {onOpenRandom && (
               <button
                 type="button"
                 onClick={onOpenRandom}
-                className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg"
+                className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg whitespace-nowrap"
               >
-                Pick Random
+                Random Picker
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
