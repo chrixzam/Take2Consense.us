@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, MapPin, AlertCircle, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, Sparkles, ExternalLink } from 'lucide-react';
 
 type PredictHQEvent = {
   id: string;
@@ -146,33 +146,51 @@ export function EventsFeed({
             <div className="p-6 text-sm text-gray-600">No events found.</div>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {events.map((ev) => (
-                <li key={ev.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 pr-4">
-                      <div className="flex items-center space-x-2 mb-1">
-                        {ev.category && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                            {ev.category}
-                          </span>
+              {events.map((ev) => {
+                const searchQuery = encodeURIComponent([
+                  ev.title,
+                  ev.place?.name || ev.entities?.[0]?.name,
+                ].filter(Boolean).join(' '));
+                const sourceUrl = `https://www.google.com/search?q=${searchQuery}`;
+                return (
+                  <li key={ev.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center space-x-2 mb-1">
+                          {ev.category && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              {ev.category}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-gray-900 font-medium mb-1 line-clamp-2">{ev.title || 'Untitled event'}</div>
+                        {ev.description && (
+                          <div className="text-sm text-gray-600 line-clamp-2">{ev.description}</div>
                         )}
-                      </div>
-                      <div className="text-gray-900 font-medium mb-1 line-clamp-2">{ev.title || 'Untitled event'}</div>
-                      {ev.description && (
-                        <div className="text-sm text-gray-600 line-clamp-2">{ev.description}</div>
-                      )}
-                      <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                        {ev.start && (
-                          <span className="inline-flex items-center"><Calendar className="w-4 h-4 mr-1 text-gray-400" /> {formatDate(ev.start)}</span>
-                        )}
-                        {(ev.place?.name || ev.entities?.[0]?.name) && (
-                          <span className="inline-flex items-center"><MapPin className="w-4 h-4 mr-1 text-gray-400" /> {ev.place?.name || ev.entities?.[0]?.name}</span>
-                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                          {ev.start && (
+                            <span className="inline-flex items-center"><Calendar className="w-4 h-4 mr-1 text-gray-400" /> {formatDate(ev.start)}</span>
+                          )}
+                          {(ev.place?.name || ev.entities?.[0]?.name) && (
+                            <span className="inline-flex items-center"><MapPin className="w-4 h-4 mr-1 text-gray-400" /> {ev.place?.name || ev.entities?.[0]?.name}</span>
+                          )}
+                        </div>
+                        <div className="mt-3">
+                          <a
+                            href={sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            <ExternalLink className="w-4 h-4 mr-1" />
+                            Source
+                          </a>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
