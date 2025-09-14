@@ -276,8 +276,8 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          {/* Session Context Header */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          {/* Session Context Header (container removed) */}
+          <div className="">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl">
@@ -342,7 +342,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
               </div>
             </div>
             {session.description && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-2">
                 <p className="text-gray-600">{session.description}</p>
               </div>
             )}
