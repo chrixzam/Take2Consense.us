@@ -24,6 +24,7 @@ interface SessionListProps {
 
 export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed, onOpenProfile }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
+  const [ideaText, setIdeaText] = useState('');
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffTime = now.getTime() - new Date(date).getTime();
@@ -48,6 +49,30 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Consense.us</h1>
           <p className="text-gray-600">Make group decisions effortlessly with your planning sessions</p>
+
+          {/* Idea input box under hero text (glassy, dark) */}
+          <div className="max-w-2xl mx-auto mt-6 px-2">
+            <div className="relative rounded-2xl border border-white/10 bg-gray-900/80 backdrop-blur-md shadow-xl shadow-blue-900/20">
+              <input
+                type="text"
+                value={ideaText}
+                onChange={(e) => setIdeaText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCreateNew();
+                }}
+                placeholder="Type your idea and we'll plan it together…"
+                className="w-full bg-transparent px-5 py-5 pr-44 text-lg text-gray-100 placeholder-gray-400 rounded-2xl outline-none focus:ring-2 focus:ring-cyan-500/60"
+                aria-label="Type your idea"
+              />
+              <button
+                type="button"
+                onClick={onCreateNew}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-medium shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+              >
+                Start planning
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
