@@ -501,7 +501,3 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
