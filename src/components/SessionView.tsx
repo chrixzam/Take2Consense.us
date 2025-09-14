@@ -462,6 +462,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                 events={session.events}
                 feedEvents={feedEvents}
                 onAddFromFeed={handleAddFromFeed}
+                onClose={() => setShowRandomModal(false)}
               />
             </div>
           </div>

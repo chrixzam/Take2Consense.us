@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { Shuffle, Sparkles } from 'lucide-react';
+import { Shuffle, Sparkles, Calendar, MapPin, DollarSign, Clock } from 'lucide-react';
 import { EventIdea, FeedEvent } from '../types';
 
 interface RandomSuggestionProps {
   events: EventIdea[];
   feedEvents?: FeedEvent[];
   onAddFromFeed?: (ev: FeedEvent) => void;
+  onClose?: () => void;
 }
 
-export function RandomSuggestion({ events, feedEvents = [], onAddFromFeed }: RandomSuggestionProps) {
+export function RandomSuggestion({ events, feedEvents = [], onAddFromFeed, onClose }: RandomSuggestionProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestedEvent, setSuggestedEvent] = useState<EventIdea | null>(null);
   const [suggestedFeedEvent, setSuggestedFeedEvent] = useState<FeedEvent | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const generateRandomSuggestion = () => {
     const hasFeed = feedEvents && feedEvents.length > 0;
@@ -102,10 +104,16 @@ export function RandomSuggestion({ events, feedEvents = [], onAddFromFeed }: Ran
                   )}
                   <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                     {suggestedFeedEvent.start && (
-                      <div>📅 {new Date(suggestedFeedEvent.start).toLocaleString()}</div>
+                      <div className="inline-flex items-center">
+                        <Calendar className="w-4 h-4 mr-1 text-gray-400" />
+                        {new Date(suggestedFeedEvent.start).toLocaleString()}
+                      </div>
                     )}
                     {suggestedFeedEvent.locationName && (
-                      <div>📍 {suggestedFeedEvent.locationName}</div>
+                      <div className="inline-flex items-center">
+                        <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                        {suggestedFeedEvent.locationName}
+                      </div>
                     )}
                   </div>
                   {suggestedFeedEvent.sourceUrl && (
@@ -123,10 +131,22 @@ export function RandomSuggestion({ events, feedEvents = [], onAddFromFeed }: Ran
                     <p className="text-gray-600">{suggestedEvent.description}</p>
                   )}
                   <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <div>📅 {new Date(suggestedEvent.date).toLocaleDateString()}</div>
-                    <div>📍 {suggestedEvent.location}</div>
-                    <div>💰 ${suggestedEvent.budget}</div>
-                    <div>⏰ {suggestedEvent.duration}h</div>
+                    <div className="inline-flex items-center">
+                      <Calendar className="w-4 h-4 mr-1 text-gray-400" />
+                      {new Date(suggestedEvent.date).toLocaleDateString()}
+                    </div>
+                    <div className="inline-flex items-center">
+                      <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                      {suggestedEvent.location}
+                    </div>
+                    <div className="inline-flex items-center">
+                      <DollarSign className="w-4 h-4 mr-1 text-gray-400" />
+                      ${suggestedEvent.budget}
+                    </div>
+                    <div className="inline-flex items-center">
+                      <Clock className="w-4 h-4 mr-1 text-gray-400" />
+                      {suggestedEvent.duration}h
+                    </div>
                   </div>
                   <div className="text-sm text-gray-500">
                     Suggested by {suggestedEvent.suggestedBy}
@@ -137,20 +157,26 @@ export function RandomSuggestion({ events, feedEvents = [], onAddFromFeed }: Ran
 
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={resetSuggestion}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                onClick={generateRandomSuggestion}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isGenerating}
               >
-                Try Again
+                {isGenerating ? 'Picking…' : 'Try Again'}
               </button>
               <button
-                className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => {
+                  if (isSubmitting) return;
                   if (suggestedFeedEvent && onAddFromFeed) {
+                    setIsSubmitting(true);
                     onAddFromFeed(suggestedFeedEvent);
+                    // Close the modal to avoid duplicate additions
+                    if (onClose) onClose();
                   }
                 }}
+                disabled={isSubmitting || !suggestedFeedEvent}
               >
-                Let's Do It!
+                {isSubmitting ? 'Adding…' : "Let's Do It!"}
               </button>
             </div>
           </div>
