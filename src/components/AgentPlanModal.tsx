@@ -263,7 +263,16 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4">
           <div className="md:col-span-2 p-0 md:p-5 max-h-[60vh] overflow-auto border-b md:border-b-0 md:border-r border-gray-100">
             {/* Map container (optional; loads when API key present) */}
-            <div className="w-full h-48 md:rounded-md bg-gray-100" ref={mapRef} />
+            <div 
+              className="w-full h-48 md:rounded-md bg-gray-100 bg-cover bg-center bg-no-repeat relative overflow-hidden" 
+              ref={mapRef}
+              style={{
+                backgroundImage: 'url(/fiji-map.jpg)'
+              }}
+            >
+              {/* Overlay for when Google Maps loads */}
+              <div className="absolute inset-0 bg-white opacity-0 transition-opacity duration-300" id="maps-overlay" />
+            </div>
             {/* Small subsection under the map (customizable) */}
             <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
               {mapFooter ? (
