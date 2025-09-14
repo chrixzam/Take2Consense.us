@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigation } from './Navigation';
 import { User } from '../types';
-import { Camera, Upload, User2 } from 'lucide-react';
+import { Camera, Plus, User2 } from 'lucide-react';
 
 interface UserProfileProps {
   user: User;
@@ -87,6 +87,15 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
       ) : (
         <User2 className="w-10 h-10 text-gray-400" />
       )}
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
+        aria-label="Upload photo"
+        title="Upload photo"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
     </div>
   );
 
@@ -125,15 +134,6 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
                 className="hidden"
                 onChange={handleFileChange}
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center space-x-1 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                title="Upload photo"
-              >
-                <Upload className="w-4 h-4" />
-                <span>Upload</span>
-              </button>
               {avatar && (
                 <button
                   className="text-sm text-gray-600 hover:text-gray-800"
