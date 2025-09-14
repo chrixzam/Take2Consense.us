@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, DollarSign, Clock, Calendar, ThumbsUp, User, Trash2, ExternalLink } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Calendar, ThumbsUp, Trash2, ExternalLink } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventCardProps {
@@ -106,8 +106,6 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.Other}`}>
               {event.category}
             </span>
-            <User className="w-4 h-4" />
-            <span>{event.votes} votes</span>
             {event.sourceUrl && (
               <a
                 href={event.sourceUrl}
