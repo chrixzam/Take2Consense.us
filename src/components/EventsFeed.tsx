@@ -73,7 +73,8 @@ export function EventsFeed({
       category: 'conferences',
       description: 'Connect with top tech companies and explore exclusive hiring opportunities',
       place: { name: 'Moscone Center', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-2',
@@ -82,7 +83,8 @@ export function EventsFeed({
       category: 'conferences',
       description: 'Join product leaders discussing AI and the future of product management',
       place: { name: 'SVN West', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-3',
@@ -91,7 +93,8 @@ export function EventsFeed({
       category: 'conferences',
       description: 'Network with employers and discover new career opportunities',
       place: { name: 'Marriott San Francisco', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-4',
@@ -100,7 +103,8 @@ export function EventsFeed({
       category: 'concerts',
       description: 'Electronic music experience with DJ Lex touring favorite cities',
       place: { name: 'The Phoenix Hotel', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-5',
@@ -109,7 +113,8 @@ export function EventsFeed({
       category: 'conferences',
       description: 'Learn go-to-market strategies from industry experts',
       place: { name: '736 Mission St', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-6',
@@ -118,7 +123,8 @@ export function EventsFeed({
       category: 'sports',
       description: 'High-energy dance and fitness event',
       place: { name: '1015 Folsom', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-7',
@@ -127,7 +133,8 @@ export function EventsFeed({
       category: 'festivals',
       description: 'Taste the best of San Francisco cuisine and local wines',
       place: { name: 'Golden Gate Park', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=250&fit=crop'
     },
     {
       id: 'mock-8',
@@ -136,7 +143,8 @@ export function EventsFeed({
       category: 'conferences',
       description: 'Watch innovative startups pitch to investors and network with founders',
       place: { name: 'The Battery SF', type: 'venue' },
-      entities: [{ name: 'San Francisco', type: 'venue' }]
+      entities: [{ name: 'San Francisco', type: 'venue' }],
+      imageUrl: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=250&fit=crop'
     }
   ];
 
@@ -231,6 +239,7 @@ export function EventsFeed({
                 end: ev.end,
                 locationName: ev.place?.name || ev.entities?.[0]?.name,
                 sourceUrl,
+                imageUrl: (ev as any).imageUrl,
               } as FeedEvent;
             });
             onLoadedEvents(normalized);
@@ -305,6 +314,7 @@ export function EventsFeed({
               end: ev.end,
               locationName: ev.place?.name || ev.entities?.[0]?.name,
               sourceUrl,
+              imageUrl: (ev as any).imageUrl,
             } as FeedEvent;
           });
           onLoadedEvents(normalized);
@@ -414,9 +424,20 @@ export function EventsFeed({
                   end: ev.end,
                   locationName: ev.place?.name || ev.entities?.[0]?.name,
                   sourceUrl,
+                  imageUrl: (ev as any).imageUrl,
                 };
                 return (
-                  <li key={ev.id} className="p-3 bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow">
+                  <li key={ev.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow overflow-hidden">
+                    {(ev as any).imageUrl && (
+                      <div className="w-full h-32 bg-gray-100 overflow-hidden">
+                        <img 
+                          src={(ev as any).imageUrl} 
+                          alt={ev.title || 'Event image'} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0 pr-3">
                         <div className="flex items-center space-x-2 mb-1">
@@ -465,6 +486,7 @@ export function EventsFeed({
                           )}
                         </div>
                       </div>
+                    </div>
                     </div>
                   </li>
                 );
