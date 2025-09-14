@@ -82,7 +82,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
                   }
                   setPlanning(true);
                   try {
-                    const res = await planWithAgent(ideaText.trim(), 'planner');
+                    const res = await planWithAgent(ideaText.trim(), 'planner', userCoords, currentCity);
                     setPlanText(res.text);
                     setPlanModel(res.model);
                     setPlanProvider(res.provider);
