@@ -432,7 +432,7 @@ function App() {
       updatedAt: new Date(),
     };
 
-    const ideas = feedEvents.map((ev) => {
+    const ideas: EventIdea[] = feedEvents.map((ev) => {
       const start = ev.start ? new Date(ev.start) : sessionStartDate || new Date();
       const end = ev.end ? new Date(ev.end) : null;
       const duration = end && !Number.isNaN(end.getTime()) && end > start
@@ -490,7 +490,10 @@ function App() {
       <>
         <SessionCreationForm
           onCreateSession={handleCreateSession}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={() => {
+            setShowCreateForm(false);
+            if (isDemo && path !== '/demo') navigate('/demo');
+          }}
           currentCity={currentCity}
         />
         <VersionBadge />
@@ -504,7 +507,11 @@ function App() {
       <>
         <SessionJoinForm
           onJoinSession={handleJoinSession}
-          onCancel={() => { setShowJoinForm(false); setJoinError(''); }}
+          onCancel={() => {
+            setShowJoinForm(false);
+            setJoinError('');
+            if (isDemo && path !== '/demo') navigate('/demo');
+          }}
           error={joinError}
         />
         <VersionBadge />
@@ -519,7 +526,10 @@ function App() {
         <UserProfile
           user={currentUser}
           onUpdateUser={setCurrentUser}
-          onBack={() => setShowProfile(false)}
+          onBack={() => {
+            setShowProfile(false);
+            if (isDemo && path !== '/demo') navigate('/demo');
+          }}
         />
         <VersionBadge />
       </>
@@ -547,7 +557,7 @@ function App() {
   return (
     <>
       <SessionList
-        sessions={sessions}
+        sessions={currentSessions}
         onSelectSession={handleSelectSession}
         onCreateNew={() => setShowCreateForm(true)}
         onJoinSession={() => setShowJoinForm(true)}
