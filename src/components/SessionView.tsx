@@ -47,8 +47,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
           setSessionCoords(null);
           setSessionCountry(undefined);
         }
-      } catch (error) {
-        console.warn('Failed to geocode session city:', error);
+      } catch {
         if (!alive) return;
         setSessionCoords(null);
         setSessionCountry(undefined);
@@ -69,9 +68,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
         url.searchParams.delete('event');
       }
       window.history.replaceState({}, '', url.toString());
-    } catch (error) {
-      console.warn('Failed to set event query param:', error);
-    }
+    } catch {}
   };
 
   // Open modal based on `?event=<id>` on load or when events update
@@ -86,9 +83,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
         // Clean up stale param if event not found
         setEventQueryParam(null);
       }
-    } catch (error) {
-      console.warn('Failed to parse URL params for event modal:', error);
-    }
+    } catch {}
   }, [session.events]);
 
   const handleAddIdea = (ideaData: {

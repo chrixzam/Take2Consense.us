@@ -29,24 +29,18 @@ function App() {
   useEffect(() => {
     const savedSessions = localStorage.getItem('groupSessions');
     if (savedSessions) {
-      const parsedSessions = JSON.parse(savedSessions).map((session: unknown) => {
-        const s = session as Record<string, unknown>;
-        return {
-          ...s,
-          // Migrate existing sessions to have shareId if missing
-          shareId: s.shareId || generateSessionId(),
-          createdAt: new Date(s.createdAt as string),
-          updatedAt: new Date(s.updatedAt as string),
-          events: Array.isArray(s.events) ? s.events.map((event: unknown) => {
-            const e = event as Record<string, unknown>;
-            return {
-              ...e,
-              date: new Date(e.date as string),
-              createdAt: new Date(e.createdAt as string)
-            };
-          }) : []
-        };
-      });
+      const parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
+        ...session,
+        // Migrate existing sessions to have shareId if missing
+        shareId: session.shareId || generateSessionId(),
+        createdAt: new Date(session.createdAt),
+        updatedAt: new Date(session.updatedAt),
+        events: session.events.map((event: any) => ({
+          ...event,
+          date: new Date(event.date),
+          createdAt: new Date(event.createdAt)
+        }))
+      }));
       setSessions(parsedSessions);
     }
     const savedUser = localStorage.getItem('currentUser');
@@ -54,9 +48,7 @@ function App() {
       try {
         const parsed: User = JSON.parse(savedUser);
         if (parsed && parsed.id) setCurrentUser(parsed);
-      } catch (error) {
-        console.warn('Failed to parse saved user:', error);
-      }
+      } catch {}
     }
   }, []);
 
@@ -86,9 +78,7 @@ function App() {
           if (parsed.coords) setUserCoords(parsed.coords);
           if (parsed.countryCode) setUserCountry(parsed.countryCode);
         }
-      } catch (error) {
-        console.warn('Failed to parse cached location:', error);
-      }
+      } catch {}
     }
     if (!cached && navigator.geolocation) {
       (async () => {
@@ -315,7 +305,7 @@ function App() {
         onCityChange={async (city) => {
           setCurrentCity(city);
           // Try to forward-geocode the city name to update coords
-          const geocoded = await forwardGeocodeCity(city);
+          let geocoded = await forwardGeocodeCity(city);
           let coords = geocoded?.coords;
           let country = geocoded?.countryCode;
           if (!coords) {
@@ -326,9 +316,7 @@ function App() {
                 const parsed = JSON.parse(cached);
                 coords = parsed?.coords || undefined;
                 country = parsed?.countryCode || country;
-              } catch (error) {
-                console.warn('Failed to parse cached location for city change:', error);
-              }
+              } catch {}
             } else {
               coords = userCoords || undefined;
             }

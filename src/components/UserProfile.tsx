@@ -18,7 +18,7 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
   useEffect(() => {
     setName(user.name);
     setAvatar(user.avatar || '');
-  }, [user.id, user.name, user.avatar]);
+  }, [user.id]);
 
   const handleSave = () => {
     const updated: User = { ...user, name: name.trim() || 'You', avatar: avatar.trim() || undefined };
@@ -66,7 +66,7 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
     try {
       const dataUrl = await fileToDataUrl(file);
       setAvatar(dataUrl);
-    } catch {
+    } catch (err) {
       setPreviewError('Could not process the image');
     } finally {
       // reset input so the same file can be chosen again if needed

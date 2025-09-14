@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Share2, Copy, Check, X } from 'lucide-react';
+import { Share2, Copy, Check, X, QrCode } from 'lucide-react';
 
 interface ShareSessionModalProps {
   sessionId: string;
@@ -18,7 +18,7 @@ export function ShareSessionModal({ sessionId, sessionName, isOpen, onClose }: S
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = text;

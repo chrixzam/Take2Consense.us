@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation } from 'lucide-react';
 import { detectCity } from '../utils/geolocation';
 

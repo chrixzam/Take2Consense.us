@@ -125,7 +125,7 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
           <div>
             <input
               type="text"
-              placeholder="What do you want to do?"
+              placeholder="What would you like to do?"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="w-full px-0 py-2 text-xl font-medium placeholder-gray-400 border-0 border-b-2 border-gray-200 focus:border-blue-600 focus:ring-0 bg-transparent"

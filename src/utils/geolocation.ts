@@ -68,9 +68,7 @@ async function ipFallback(): Promise<{ city: string; coords: Coordinates } | nul
         }
       }
     }
-  } catch (error) {
-    console.warn('Failed to fetch from ipwho.is:', error);
-  }
+  } catch {}
   try {
     // Fallback to ipapi.co
     const res2 = await fetch('https://ipapi.co/json/');
@@ -82,9 +80,7 @@ async function ipFallback(): Promise<{ city: string; coords: Coordinates } | nul
         return { city, coords };
       }
     }
-  } catch (error) {
-    console.warn('Failed to fetch from ipapi.co:', error);
-  }
+  } catch {}
   return null;
 }
 
@@ -98,15 +94,11 @@ export async function detectCity(): Promise<GeoResult | null> {
     };
     const details = await reverseGeocode(coords);
     return { city: details.label, coords, countryCode: details.countryCode };
-  } catch (error) {
-    console.warn('Failed to get GPS location:', error);
-  }
+  } catch {}
   // Fallback to IP-based geolocation
   try {
     const ip = await ipFallback();
     if (ip) return ip;
-  } catch (error) {
-    console.warn('Failed to get IP-based location:', error);
-  }
+  } catch {}
   return null;
 }

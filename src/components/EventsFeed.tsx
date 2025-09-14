@@ -85,9 +85,8 @@ export function EventsFeed({
         const data = await res.json();
         const results = Array.isArray(data?.results) ? data.results : [];
         if (alive) setEvents(results);
-      } catch (e: unknown) {
-        const errorMessage = e instanceof Error ? e.message : 'Failed to load events';
-        if (alive) setError(errorMessage);
+      } catch (e: any) {
+        if (alive) setError(e?.message || 'Failed to load events');
       } finally {
         if (alive) setLoading(false);
       }
