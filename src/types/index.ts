@@ -22,8 +22,10 @@ export interface User {
 export interface GroupSession {
   id: string;
   name: string;
+  description?: string;
   members: User[];
   events: EventIdea[];
   city: string;
   createdAt: Date;
+  updatedAt: Date;
 }
