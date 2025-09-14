@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus } from 'lucide-react';
 import { Navigation } from './Navigation';
-import EventsFeed from './EventsFeed';
+import { EventsFeed } from './EventsFeed';
 import { GroupSession } from '../types';
 import { CitySelector } from './CitySelector';
 

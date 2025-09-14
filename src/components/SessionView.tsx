@@ -6,8 +6,10 @@ import { CalendarView } from './CalendarView';
 import { RandomSuggestion } from './RandomSuggestion';
 import { CitySelector } from './CitySelector';
 import { ShareSessionModal } from './ShareSessionModal';
+import { EventsFeed } from './EventsFeed';
 import { EventIdea, User, GroupSession } from '../types';
 import { categorizeEvent } from '../utils/eventCategories';
+import { forwardGeocodeCity } from '../utils/geolocation';
 import { Calendar, Grid3X3, Sparkles, Users, MapPin, Share2 } from 'lucide-react';
 
 interface SessionViewProps {
@@ -22,6 +24,33 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRandomModal, setShowRandomModal] = useState(false);
   const [activeView, setActiveView] = useState<'grid' | 'calendar'>('grid');
+  const [sessionCoords, setSessionCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [sessionCountry, setSessionCountry] = useState<string | undefined>(undefined);
+
+  // Geocode the session city to use in the EventsFeed
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const geo = await forwardGeocodeCity(session.city);
+        if (!alive) return;
+        if (geo) {
+          setSessionCoords(geo.coords);
+          setSessionCountry(geo.countryCode);
+        } else {
+          setSessionCoords(null);
+          setSessionCountry(undefined);
+        }
+      } catch {
+        if (!alive) return;
+        setSessionCoords(null);
+        setSessionCountry(undefined);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [session.city]);
 
   const handleAddIdea = (ideaData: {
     title: string;
@@ -228,6 +257,15 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
           )}
 
           {/* Random picker moved to modal; removed redundant bottom view */}
+
+          {/* Events Feed for this session (uses session city) */}
+          <EventsFeed
+            query="jazz"
+            country={sessionCountry}
+            category="concerts"
+            locationAroundOrigin={sessionCoords ? `${sessionCoords.lat},${sessionCoords.lon}` : undefined}
+            locationAroundOffset={sessionCoords ? '10km' : undefined}
+          />
         </div>
       </main>
 
