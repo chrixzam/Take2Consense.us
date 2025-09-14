@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, DollarSign, Clock, Calendar, Heart, User, Trash2 } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Calendar, Heart, User, Trash2, ExternalLink } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventCardProps {
@@ -102,9 +102,21 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <div className="flex items-center space-x-3 text-sm text-gray-600">
             <User className="w-4 h-4" />
             <span>{event.votes} votes</span>
+            {event.sourceUrl && (
+              <a
+                href={event.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Open link"
+                className="inline-flex items-center text-gray-500 hover:text-blue-600"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onVote(event.id); }}

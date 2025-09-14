@@ -31,9 +31,24 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
     imageDataUrl: undefined as string | undefined,
     sourceUrl: ''
   });
+  const [urlError, setUrlError] = useState<string>('');
+
+  const validateUrl = (value: string) => {
+    if (!value) return '';
+    try {
+      const u = new URL(value);
+      if (u.protocol === 'http:' || u.protocol === 'https:') return '';
+      return 'Link must start with http or https';
+    } catch {
+      return 'Enter a valid URL (e.g., https://example.com)';
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validateUrl(formData.sourceUrl);
+    setUrlError(err);
+    if (err) return;
     if (formData.title.trim()) {
       onSubmit(formData);
       setFormData({
@@ -135,9 +150,15 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
               type="url"
               placeholder="https://example.com/details or tickets"
               value={formData.sourceUrl}
-              onChange={(e) => setFormData({ ...formData, sourceUrl: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, sourceUrl: value });
+                setUrlError(validateUrl(value));
+              }}
+              aria-invalid={!!urlError}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+            {urlError && <p className="text-xs text-red-600">{urlError}</p>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -250,7 +271,7 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
             </button>
             <button
               type="submit"
-              disabled={!formData.title.trim()}
+              disabled={!formData.title.trim() || !!urlError}
               className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Add Idea
