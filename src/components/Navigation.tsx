@@ -61,7 +61,7 @@ export function Navigation({
                 <Logo size={40} />
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {window.location.pathname === '/demo' ? 'Consense.us Demo' : 'Consense.us'}
+                    {window.location.pathname === '/demo' ? 'Consense.US' : 'Consense.us'}
                   </h1>
                 </div>
               </a>
