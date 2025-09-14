@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface LogoProps {
   size?: number;
@@ -7,16 +7,20 @@ interface LogoProps {
 }
 
 // Displays the brand logo image from /public (default: /logo.svg)
-export function Logo({ size = 40, className, src = '/logo.svg' }: LogoProps) {
+export function Logo({ size = 40, className, src = '/logo.png' }: LogoProps) {
   const pixelSize = `${size}px`;
+  const [imgSrc, setImgSrc] = useState(src);
   return (
     <img
-      src={src}
+      src={imgSrc}
       alt="Consense.us logo"
       width={size}
       height={size}
       style={{ width: pixelSize, height: pixelSize }}
       className={className}
+      onError={() => {
+        if (imgSrc !== '/logo.svg') setImgSrc('/logo.svg');
+      }}
     />
   );
 }
