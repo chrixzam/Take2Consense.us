@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus, Trash2 } from 'lucide-react';
 import { Navigation } from './Navigation';
 import { EventsFeed } from './EventsFeed';
-import { GroupSession } from '../types';
-import type { FeedEvent } from '../types';
+import type { GroupSession, FeedEvent } from '../types';
 import { CitySelector } from './CitySelector';
 import AgentPlanModal from './AgentPlanModal';
 import { planWithAgent } from '../agents/service';
@@ -33,6 +32,8 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
   const [planModel, setPlanModel] = useState<string | undefined>(undefined);
   const [planProvider, setPlanProvider] = useState<string | undefined>(undefined);
   const [planError, setPlanError] = useState<string | null>(null);
+  const [suggestedPlaces, setSuggestedPlaces] = useState<Array<{ name: string; type: string; lat: number; lon: number; distKm: number; url: string }>>([]);
+  const [suggestedEvents, setSuggestedEvents] = useState<Array<{ title: string; place?: string; start?: string; url?: string; category?: string }>>([]);
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffTime = now.getTime() - new Date(date).getTime();
@@ -82,10 +83,12 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
                   }
                   setPlanning(true);
                   try {
-                    const res = await planWithAgent(ideaText.trim(), 'planner', userCoords, currentCity);
+                    const res = await planWithAgent(ideaText.trim(), 'planner', userCoords, currentCity, userCountry);
                     setPlanText(res.text);
                     setPlanModel(res.model);
                     setPlanProvider(res.provider);
+                    setSuggestedPlaces(res.places || []);
+                    setSuggestedEvents(res.events || []);
                     setPlanModalOpen(true);
                   } catch (e) {
                     setPlanError('Failed to get a plan.');
@@ -232,6 +235,11 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         planText={planText}
         model={planModel}
         provider={planProvider}
+        places={suggestedPlaces}
+        events={suggestedEvents}
+        onAddFromPlan={(ev: FeedEvent) => {
+          if (onAddEventFromFeed) onAddEventFromFeed(ev);
+        }}
       />
     </div>
     </div>

@@ -1,10 +1,15 @@
 import { AgentRegistry, agentGraph, runAgent } from './index';
 
+export type PlaceSuggestion = { name: string; type: string; lat: number; lon: number; distKm: number; url: string };
+export type EventSuggestion = { title: string; place?: string; start?: string; url?: string; category?: string };
+
 export type PlanResult = {
   text: string;
   model?: string;
   provider?: string;
   source: 'api' | 'openai' | 'anthropic' | 'local';
+  places?: PlaceSuggestion[];
+  events?: EventSuggestion[];
 };
 
 const registry = new AgentRegistry(agentGraph);
@@ -20,7 +25,7 @@ function normalizeModelId(model?: string) {
 type Coords = { lat: number; lon: number };
 
 async function fetchNearbyPOIs(idea: string, coords?: Coords) {
-  if (!coords) return [] as Array<{ name: string; type: string; lat: number; lon: number; distKm: number; url: string }>;
+  if (!coords) return [] as PlaceSuggestion[];
 
   const text = idea.toLowerCase();
   // Very small heuristic for place categories
@@ -93,13 +98,52 @@ async function fetchNearbyPOIs(idea: string, coords?: Coords) {
     .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lon))
     .sort((a, b) => a.distKm - b.distKm)
     .slice(0, 8);
-    return results;
+    return results as PlaceSuggestion[];
   } catch {
     return [];
   }
 }
 
-export async function planWithAgent(idea: string, agentId = 'planner', coords?: Coords, city?: string): Promise<PlanResult> {
+async function fetchRelevantEvents(idea: string, coords?: Coords, country?: string) {
+  // Mirror EventsFeed token logic
+  const envToken = import.meta.env.VITE_PREDICTHQ_TOKEN as string | undefined;
+  const token = envToken && envToken.trim().length > 0
+    ? envToken
+    : '4vd1wx00yGqZtYdxxZMH3lZmX39f2nBlJ3A_uIz2';
+  if (!token || !coords) return [] as EventSuggestion[];
+
+  try {
+    const params = new URLSearchParams();
+    if (idea) params.set('q', idea.slice(0, 100));
+    params.set('limit', '5');
+    if (country) params.set('country', country);
+    params.set('sort', 'start');
+    params.set('active.gte', new Date().toISOString());
+    params.set('location_around.origin', `${coords.lat},${coords.lon}`);
+    params.set('location_around.offset', '10km');
+
+    const res = await fetch(`https://api.predicthq.com/v1/events/?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data: any = await res.json();
+    const results: any[] = Array.isArray(data?.results) ? data.results : [];
+    return results.slice(0, 5).map((ev: any) => {
+      const searchQuery = encodeURIComponent([ev.title, ev.place?.name || ev.entities?.[0]?.name].filter(Boolean).join(' '));
+      return {
+        title: ev.title || 'Untitled event',
+        place: ev.place?.name || ev.entities?.[0]?.name,
+        start: ev.start,
+        category: ev.category,
+        url: `https://www.google.com/search?q=${searchQuery}`,
+      } as EventSuggestion;
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function planWithAgent(idea: string, agentId = 'planner', coords?: Coords, city?: string, country?: string): Promise<PlanResult> {
   const agent = registry.get(agentId);
   if (!agent) {
     return { text: 'Agent not found.', source: 'local' };
@@ -107,9 +151,12 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
 
   // First, use our runner to build the combined prompt and select model/provider
   const prep = await runAgent(agent, idea, { mode: 'base' });
+  // Force Anthropic for start planning per requirement
   const { model, provider } = (() => {
     const norm = normalizeModelId(prep.model);
-    return { model: norm?.model || prep.model, provider: norm?.provider || prep.provider };
+    const forcedProvider = 'anthropic';
+    const forcedModel = (norm?.provider === 'anthropic' ? norm?.model : undefined) || (prep.provider === 'anthropic' ? prep.model : undefined) || 'anthropic/claude-3-5-sonnet-20240620';
+    return { model: forcedModel, provider: forcedProvider };
   })();
 
   // Gather geolocation context first if available
@@ -121,51 +168,49 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
         .join('\n')
     : '';
 
+  // Fetch relevant events from PredictHQ
+  const events = await fetchRelevantEvents(idea, coords, country);
+  const eventsContext = events.length
+    ? `\n\nUpcoming events related to "${idea}" nearby:` +
+      '\n' +
+      events
+        .map((e, i) => {
+          const when = e.start ? new Date(e.start).toLocaleString() : 'date TBA';
+          const where = e.place ? ` @ ${e.place}` : '';
+          const cat = e.category ? ` • ${e.category}` : '';
+          const title = e.url ? `[${e.title}](${e.url})` : e.title;
+          return `${i + 1}. ${title}${where}${cat} — ${when}`;
+        })
+        .join('\n')
+    : '';
+
+  // Prefer calling a backend proxy if configured to avoid CORS and protect keys
   const apiUrl = import.meta.env.VITE_AGENT_API_URL as string | undefined;
   if (apiUrl) {
     try {
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, userInput: idea + nearbyContext, mode: 'base', coords, city }),
+        body: JSON.stringify({ agentId, userInput: idea + nearbyContext + eventsContext, mode: 'base', coords, city, country }),
       });
       if (res.ok) {
         const data = await res.json();
-        return { text: data.text || String(data), model: data.model || model, provider: data.provider || provider, source: 'api' };
+        return {
+          text: data.text || String(data),
+          model: data.model || model,
+          provider: data.provider || provider,
+          source: 'api',
+          places: nearby,
+          events,
+        };
       }
-    } catch (e) {
-      // fallthrough
+    } catch (_) {
+      // fall through to direct provider call
     }
   }
 
-  const openaiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
-  if (openaiKey && provider === 'openai') {
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: (model || 'gpt-4.1-mini').replace(/-\d{4}-\d{2}-\d{2}$/,'').replace(/^openai\//,''),
-          messages: [
-            { role: 'system', content: prep.preparedPrompt.split('\n\n[User]\n')[0] },
-            { role: 'user', content: idea + nearbyContext },
-          ],
-          temperature: 0.2,
-        }),
-      });
-      if (response.ok) {
-        const data: any = await response.json();
-        const text = data.choices?.[0]?.message?.content || JSON.stringify(data);
-        return { text, model, provider, source: 'openai' };
-      }
-    } catch (_) {}
-  }
-
   const anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
-  if (anthropicKey && provider === 'anthropic') {
+  if (anthropicKey) {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -178,13 +223,13 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
           model: (model || 'claude-3-5-sonnet-20240620').replace(/^anthropic\//,''),
           max_tokens: 800,
           system: prep.preparedPrompt.split('\n\n[User]\n')[0],
-          messages: [ { role: 'user', content: idea + nearbyContext } ],
+          messages: [ { role: 'user', content: idea + nearbyContext + eventsContext } ],
         }),
       });
       if (response.ok) {
         const data: any = await response.json();
         const text = data?.content?.[0]?.text || JSON.stringify(data);
-        return { text, model, provider, source: 'anthropic' };
+        return { text, model, provider, source: 'anthropic', places: nearby, events };
       }
     } catch (_) {}
   }
@@ -193,6 +238,14 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
   const list = nearby.length
     ? '\n\nNearby suggestions:\n' + nearby.map((p, i) => `${i + 1}. ${p.name} — ${(p.distKm*1000|0)} m • ${p.url}`).join('\n')
     : '';
+  const eventsList = events.length
+    ? '\n\nRelevant nearby events:\n' + events
+        .map((e, i) => {
+          const title = e.url ? `[${e.title}](${e.url})` : e.title;
+          return `${i + 1}. ${title}${e.place ? ` @ ${e.place}` : ''}`;
+        })
+        .join('\n')
+    : '';
   const fallback = `Plan Outline\n\n1) Clarify constraints (budget, time, location).\n2) Generate 3 options relevant to: "${idea}" using nearby places.\n3) Compare pros/cons, pick a lead.\n4) Propose date/time and rough budget.\n5) Next steps: confirm attendees, book venue.${list}`;
-  return { text: fallback, model, provider, source: 'local' };
+  return { text: fallback + eventsList, model, provider, source: 'local', places: nearby, events };
 }
