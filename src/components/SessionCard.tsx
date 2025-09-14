@@ -21,6 +21,16 @@ export function SessionCard({ session, onSelect, onDelete }: SessionCardProps) {
     return new Date(date).toLocaleDateString();
   };
 
+  // Normalize legacy auto-generated names like "Planning session for <X>"
+  const displayName = React.useMemo(() => {
+    try {
+      const stripped = session.name.replace(/^\s*planning\s*session\s*for\s*/i, '').trim();
+      return stripped.length > 0 ? stripped : session.name;
+    } catch {
+      return session.name;
+    }
+  }, [session.name]);
+
   return (
     <div
       onClick={() => onSelect(session)}
@@ -29,7 +39,7 @@ export function SessionCard({ session, onSelect, onDelete }: SessionCardProps) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">
-            {session.name}
+            {displayName}
           </h3>
           {session.description && (
             <p className="text-gray-600 text-sm line-clamp-2 mb-3">{session.description}</p>
