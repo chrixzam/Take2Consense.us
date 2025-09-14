@@ -7,9 +7,10 @@ interface EventCardProps {
   onVote: (eventId: string) => void;
   hasVoted: boolean;
   onDelete?: (eventId: string) => void;
+  onOpen?: (event: EventIdea) => void;
 }
 
-export function EventCard({ event, onVote, hasVoted, onDelete }: EventCardProps) {
+export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCardProps) {
   const categoryColors = {
     'Food & Dining': 'bg-orange-100 text-orange-800',
     'Entertainment': 'bg-purple-100 text-purple-800',
@@ -30,7 +31,19 @@ export function EventCard({ event, onVote, hasVoted, onDelete }: EventCardProps)
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 overflow-hidden group hover:shadow-md">
+    <div
+      className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 overflow-hidden group hover:shadow-md cursor-pointer"
+      onClick={() => onOpen?.(event)}
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (!onOpen) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(event);
+        }
+      }}
+    >
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -49,7 +62,8 @@ export function EventCard({ event, onVote, hasVoted, onDelete }: EventCardProps)
           </div>
           {onDelete && (
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (window.confirm('Delete this idea? This cannot be undone.')) {
                   onDelete(event.id);
                 }
@@ -88,7 +102,7 @@ export function EventCard({ event, onVote, hasVoted, onDelete }: EventCardProps)
             <span>{event.votes} votes</span>
           </div>
           <button
-            onClick={() => onVote(event.id)}
+            onClick={(e) => { e.stopPropagation(); onVote(event.id); }}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
               hasVoted
                 ? 'bg-red-50 text-red-600 hover:bg-red-100'

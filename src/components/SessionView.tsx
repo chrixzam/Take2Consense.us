@@ -4,6 +4,7 @@ import { IdeaSubmissionForm } from './IdeaSubmissionForm';
 import { EventCard } from './EventCard';
 import { CalendarView } from './CalendarView';
 import { RandomSuggestion } from './RandomSuggestion';
+import EventDetailsModal from './EventDetailsModal';
 import { CitySelector } from './CitySelector';
 import { ShareSessionModal } from './ShareSessionModal';
 import { EventsFeed } from './EventsFeed';
@@ -28,6 +29,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
   const [activeView, setActiveView] = useState<'grid' | 'calendar'>('grid');
   const [sessionCoords, setSessionCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [sessionCountry, setSessionCountry] = useState<string | undefined>(undefined);
+  const [selectedEvent, setSelectedEvent] = useState<EventIdea | null>(null);
 
   // Geocode the session city to use in the EventsFeed
   React.useEffect(() => {
@@ -53,6 +55,34 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
       alive = false;
     };
   }, [session.city]);
+
+  // Helper to set/clear the `event` query param
+  const setEventQueryParam = (eventId: string | null) => {
+    try {
+      const url = new URL(window.location.href);
+      if (eventId) {
+        url.searchParams.set('event', eventId);
+      } else {
+        url.searchParams.delete('event');
+      }
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+  };
+
+  // Open modal based on `?event=<id>` on load or when events update
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('event');
+      if (!id) return;
+      const ev = session.events.find(e => e.id === id) || null;
+      setSelectedEvent(ev);
+      if (!ev) {
+        // Clean up stale param if event not found
+        setEventQueryParam(null);
+      }
+    } catch {}
+  }, [session.events]);
 
   const handleAddIdea = (ideaData: {
     title: string;
@@ -296,6 +326,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                   onVote={handleVote}
                   hasVoted={event.voters.includes(currentUser.id)}
                   onDelete={handleDeleteIdea}
+                  onOpen={(ev) => { setSelectedEvent(ev); setEventQueryParam(ev.id); }}
                 />
               ))}
               {session.events.length === 0 && (
@@ -340,6 +371,16 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
         sessionName={session.name}
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
+      />
+
+      {/* Event Details Modal */}
+      <EventDetailsModal
+        event={selectedEvent ? (session.events.find(e => e.id === selectedEvent.id) || selectedEvent) : null}
+        isOpen={!!selectedEvent}
+        hasVoted={selectedEvent ? (session.events.find(e => e.id === selectedEvent.id)?.voters.includes(currentUser.id) ?? false) : false}
+        onClose={() => { setSelectedEvent(null); setEventQueryParam(null); }}
+        onVote={handleVote}
+        onDelete={(id) => { handleDeleteIdea(id); setSelectedEvent(null); setEventQueryParam(null); }}
       />
 
       {/* Random Picker Modal */}
