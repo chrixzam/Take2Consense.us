@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Header } from './Header';
+import { Navigation } from './Navigation';
 import { IdeaSubmissionForm } from './IdeaSubmissionForm';
 import { EventCard } from './EventCard';
 import { CalendarView } from './CalendarView';
@@ -122,12 +122,13 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        groupName={session.name}
+      <Navigation
+        showBackButton
+        onBack={onBack}
+        sessionName={session.name}
         memberCount={session.members.length}
         currentCity={session.city}
         onCityEdit={() => setShowCitySelector(true)}
-        onBack={onBack}
       />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

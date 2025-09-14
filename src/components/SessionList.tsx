@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar, Users, MapPin, Plus, Clock } from 'lucide-react';
+import { Calendar, Users, MapPin, Plus, Clock, Sparkles } from 'lucide-react';
+import { Navigation } from './Navigation';
 import { GroupSession } from '../types';
 
 interface SessionListProps {
@@ -22,14 +23,17 @@ export function SessionList({ sessions, onSelectSession, onCreateNew }: SessionL
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
+      <div className="p-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8 pt-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Planning Sessions</h1>
-          <p className="text-gray-600">Organize events and activities with your groups</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Consense.us</h1>
+          <p className="text-gray-600">Make group decisions effortlessly with your planning sessions</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -125,6 +129,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew }: SessionL
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
