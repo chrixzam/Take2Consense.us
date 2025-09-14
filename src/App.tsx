@@ -6,7 +6,7 @@ import { SessionView } from './components/SessionView';
 import { User, GroupSession } from './types';
 import VersionBadge from './components/VersionBadge';
 import { generateSessionId } from './utils/sessionId';
-import { detectCity } from './utils/geolocation';
+import { detectCity, forwardGeocodeCity } from './utils/geolocation';
 
 function App() {
   const [sessions, setSessions] = useState<GroupSession[]>([]);
@@ -214,15 +214,22 @@ function App() {
         onJoinSession={() => setShowJoinForm(true)}
         userCoords={userCoords || undefined}
         currentCity={currentCity}
-        onCityChange={(city) => {
+        onCityChange={async (city) => {
           setCurrentCity(city);
-          // also refresh cache with same coords if available
-          const cached = localStorage.getItem('userLocation');
-          let coords = userCoords || undefined;
-          if (cached) {
-            try {
-              coords = JSON.parse(cached)?.coords;
-            } catch {}
+          // Try to forward-geocode the city name to update coords
+          let coords = await forwardGeocodeCity(city);
+          if (!coords) {
+            // Fallback to cached or existing coords if geocoding fails
+            const cached = localStorage.getItem('userLocation');
+            if (cached) {
+              try {
+                coords = JSON.parse(cached)?.coords || undefined;
+              } catch {}
+            } else {
+              coords = userCoords || undefined;
+            }
+          } else {
+            setUserCoords(coords);
           }
           localStorage.setItem('userLocation', JSON.stringify({ city, coords, ts: Date.now() }));
         }}

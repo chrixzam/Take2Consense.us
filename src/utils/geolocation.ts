@@ -33,6 +33,23 @@ export async function reverseGeocode(coords: Coordinates): Promise<string> {
   return label;
 }
 
+// Forward geocode a city/place name to coordinates using Open-Meteo's free geocoding API
+// https://open-meteo.com/en/docs/geocoding-api
+export async function forwardGeocodeCity(name: string): Promise<Coordinates | null> {
+  const q = name.trim();
+  if (!q) return null;
+  const url = `https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&name=${encodeURIComponent(q)}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const first = Array.isArray(data?.results) && data.results.length > 0 ? data.results[0] : null;
+  if (!first) return null;
+  const lat = Number(first.latitude);
+  const lon = Number(first.longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+  return { lat, lon };
+}
+
 async function ipFallback(): Promise<{ city: string; coords: Coordinates } | null> {
   try {
     // Try ipwho.is first
