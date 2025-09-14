@@ -1,6 +1,7 @@
 import { AgentRegistry, agentGraph, runAgent } from './index';
+import { forwardGeocodeCity } from '../utils/geolocation';
 
-export type PlaceSuggestion = { name: string; type: string; lat: number; lon: number; distKm: number; url: string };
+export type PlaceSuggestion = { name: string; type: string; lat: number; lon: number; distKm: number; url: string; address?: string; priceLevel?: string };
 export type EventSuggestion = { title: string; place?: string; start?: string; url?: string; category?: string };
 
 export type PlanResult = {
@@ -23,6 +24,65 @@ function normalizeModelId(model?: string) {
 }
 
 type Coords = { lat: number; lon: number };
+
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const A =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(A), Math.sqrt(1 - A));
+}
+
+// Google Places API: Text Search (v1)
+async function fetchGooglePlacesTextSearch(idea: string, coords?: Coords): Promise<PlaceSuggestion[]> {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  if (!key || !coords || !idea.trim()) return [];
+  try {
+    const body = {
+      textQuery: idea.slice(0, 120),
+      maxResultCount: 8,
+      locationBias: {
+        circle: {
+          center: { latitude: coords.lat, longitude: coords.lon },
+          radius: 4000,
+        },
+      },
+    };
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+        // Request fields similar to provided curl plus coords/uri/types for our UI
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.priceLevel,places.location,places.types,places.googleMapsUri',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return [];
+    const data: any = await res.json();
+    const places: any[] = Array.isArray(data?.places) ? data.places : [];
+    const mapped: PlaceSuggestion[] = places
+      .map((p: any) => {
+        const name = p.displayName?.text || 'Unnamed place';
+        const lat = p.location?.latitude;
+        const lon = p.location?.longitude;
+        const type = Array.isArray(p.types) && p.types.length ? p.types[0] : 'poi';
+        const url = p.googleMapsUri || '';
+        const address = p.formattedAddress || undefined;
+        const priceLevel = p.priceLevel || undefined; // enum string
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        const distKm = haversineKm(coords, { lat, lon });
+        return { name, type, lat, lon, distKm, url, address, priceLevel } as PlaceSuggestion;
+      })
+      .filter(Boolean) as PlaceSuggestion[];
+    return mapped.sort((a, b) => a.distKm - b.distKm).slice(0, 8);
+  } catch {
+    return [];
+  }
+}
 
 async function fetchNearbyPOIs(idea: string, coords?: Coords) {
   if (!coords) return [] as PlaceSuggestion[];
@@ -93,7 +153,8 @@ async function fetchNearbyPOIs(idea: string, coords?: Coords) {
       const distKm = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const type = el.tags?.amenity || el.tags?.leisure || el.tags?.tourism || 'poi';
       const url = el.id ? `https://www.openstreetmap.org/${el.type || 'node'}/${el.id}` : '';
-      return { name, type, lat, lon, distKm, url };
+      const address = el.tags?.['addr:full'] || el.tags?.['addr:street'] || undefined;
+      return { name, type, lat, lon, distKm, url, address };
     })
     .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lon))
     .sort((a, b) => a.distKm - b.distKm)
@@ -159,8 +220,24 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
     return { model: forcedModel, provider: forcedProvider };
   })();
 
-  // Gather geolocation context first if available
-  const nearby = await fetchNearbyPOIs(idea, coords);
+  // Ensure we have coordinates: try forward-geocode the city if missing
+  let usedCoords: Coords | undefined = coords;
+  if (!usedCoords && city) {
+    try {
+      const geo = await forwardGeocodeCity(city);
+      if (geo?.coords) usedCoords = geo.coords;
+      if (!country && geo?.countryCode) country = geo.countryCode;
+    } catch {}
+  }
+
+  // Gather geolocation context: prefer Google Places if key present; fallback to Overpass
+  let nearby: PlaceSuggestion[] = [];
+  try {
+    nearby = await fetchGooglePlacesTextSearch(idea, usedCoords);
+  } catch {}
+  if (nearby.length === 0) {
+    nearby = await fetchNearbyPOIs(idea, usedCoords);
+  }
   const nearbyContext = nearby.length
     ? `\n\nNearby options${city ? ` in ${city}` : ''} (within ~4km):\n` +
       nearby
@@ -169,7 +246,7 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
     : '';
 
   // Fetch relevant events from PredictHQ
-  const events = await fetchRelevantEvents(idea, coords, country);
+  const events = await fetchRelevantEvents(idea, usedCoords, country);
   const eventsContext = events.length
     ? `\n\nUpcoming events related to "${idea}" nearby:` +
       '\n' +
@@ -191,7 +268,7 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, userInput: idea + nearbyContext + eventsContext, mode: 'base', coords, city, country }),
+        body: JSON.stringify({ agentId, userInput: idea + nearbyContext + eventsContext, mode: 'base', coords: usedCoords, city, country }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -230,22 +307,11 @@ export async function planWithAgent(idea: string, agentId = 'planner', coords?: 
         const data: any = await response.json();
         const text = data?.content?.[0]?.text || JSON.stringify(data);
         return { text, model, provider, source: 'anthropic', places: nearby, events };
-      }
+  }
     } catch (_) {}
   }
 
-  // Local fallback: simple deterministic draft using the prompt.
-  const list = nearby.length
-    ? '\n\nNearby suggestions:\n' + nearby.map((p, i) => `${i + 1}. ${p.name} — ${(p.distKm*1000|0)} m • ${p.url}`).join('\n')
-    : '';
-  const eventsList = events.length
-    ? '\n\nRelevant nearby events:\n' + events
-        .map((e, i) => {
-          const title = e.url ? `[${e.title}](${e.url})` : e.title;
-          return `${i + 1}. ${title}${e.place ? ` @ ${e.place}` : ''}`;
-        })
-        .join('\n')
-    : '';
-  const fallback = `Plan Outline\n\n1) Clarify constraints (budget, time, location).\n2) Generate 3 options relevant to: "${idea}" using nearby places.\n3) Compare pros/cons, pick a lead.\n4) Propose date/time and rough budget.\n5) Next steps: confirm attendees, book venue.${list}`;
-  return { text: fallback + eventsList, model, provider, source: 'local', places: nearby, events };
+  // Local fallback: keep left column minimal; suggestions remain on the right.
+  const fallback = `Draft prepared for "${idea}".`;
+  return { text: fallback, model, provider, source: 'local', places: nearby, events };
 }

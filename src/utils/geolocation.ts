@@ -19,67 +19,62 @@ export function getCurrentPosition(options: PositionOptions = {
 // Reverse geocode using BigDataCloud public endpoint (no API key required)
 // https://www.bigdatacloud.com/docs/api/free-reverse-geocode-client
 export async function reverseGeocode(coords: Coordinates): Promise<{ label: string; countryCode?: string }> {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   const { lat, lon } = coords;
-  const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(
-    lat
-  )}&longitude=${encodeURIComponent(lon)}&localityLanguage=en`;
+  if (!key) throw new Error('Missing VITE_GOOGLE_MAPS_API_KEY');
+  // Use classic Geocoding API for broad compatibility
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(lat + ',' + lon)}&key=${encodeURIComponent(
+    key
+  )}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Reverse geocode failed: ${res.status}`);
   const data = await res.json();
-  const city = data.city || data.locality || data.principalSubdivision || data.localityInfo?.administrative?.[0]?.name;
-  const region = data.principalSubdivision || data.countryCode;
-  const country = data.countryName || data.countryCode;
-  const parts = [city, region].filter(Boolean);
-  const label = parts.length > 0 ? parts.join(', ') : country || 'Unknown location';
-  const countryCode: string | undefined = typeof data.countryCode === 'string' ? data.countryCode : undefined;
+  const result = Array.isArray(data?.results) && data.results.length > 0 ? data.results[0] : null;
+  if (!result) return { label: 'Unknown location' };
+  const components: Array<{ long_name: string; short_name: string; types: string[] }> = result.address_components || [];
+  const byType = (t: string) => components.find(c => c.types.includes(t));
+  const locality = byType('locality')?.long_name || byType('postal_town')?.long_name || byType('sublocality')?.long_name;
+  const admin1 = byType('administrative_area_level_1')?.short_name || byType('administrative_area_level_1')?.long_name;
+  const countryCode = byType('country')?.short_name;
+  const label = [locality, admin1].filter(Boolean).join(', ') || result.formatted_address || 'Unknown location';
   return { label, countryCode };
 }
 
 // Forward geocode a city/place name to coordinates using Open-Meteo's free geocoding API
 // https://open-meteo.com/en/docs/geocoding-api
 export async function forwardGeocodeCity(name: string): Promise<{ coords: Coordinates; countryCode?: string } | null> {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   const q = name.trim();
-  if (!q) return null;
-  const url = `https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&name=${encodeURIComponent(q)}`;
+  if (!q || !key) return null;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
   const first = Array.isArray(data?.results) && data.results.length > 0 ? data.results[0] : null;
   if (!first) return null;
-  const lat = Number(first.latitude);
-  const lon = Number(first.longitude);
+  const loc = first.geometry?.location;
+  const lat = Number(loc?.lat);
+  const lon = Number(loc?.lng);
   if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
-  const coords = { lat, lon };
-  const code = typeof first.country_code === 'string' ? String(first.country_code).toUpperCase() : undefined;
-  return { coords, countryCode: code };
+  const components: Array<{ long_name: string; short_name: string; types: string[] }> = first.address_components || [];
+  const countryCode = components.find(c => c.types.includes('country'))?.short_name;
+  return { coords: { lat, lon }, countryCode };
 }
 
-async function ipFallback(): Promise<{ city: string; coords: Coordinates } | null> {
+async function googleGeolocate(): Promise<Coordinates | null> {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  if (!key) return null;
   try {
-    // Try ipwho.is first
-    const res = await fetch('https://ipwho.is/?output=json');
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.success !== false) {
-        const city = [data.city, data.region].filter(Boolean).join(', ') || data.country || 'Unknown location';
-        const coords = { lat: Number(data.latitude), lon: Number(data.longitude) };
-        if (!Number.isNaN(coords.lat) && !Number.isNaN(coords.lon)) {
-          return { city, coords };
-        }
-      }
-    }
-  } catch {}
-  try {
-    // Fallback to ipapi.co
-    const res2 = await fetch('https://ipapi.co/json/');
-    if (res2.ok) {
-      const d = await res2.json();
-      const city = [d.city, d.region].filter(Boolean).join(', ') || d.country_name || 'Unknown location';
-      const coords = { lat: Number(d.latitude), lon: Number(d.longitude) };
-      if (!Number.isNaN(coords.lat) && !Number.isNaN(coords.lon)) {
-        return { city, coords };
-      }
-    }
+    const res = await fetch(`https://www.googleapis.com/geolocation/v1/geolocate?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ considerIp: true }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const lat = Number(data?.location?.lat);
+    const lon = Number(data?.location?.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
   } catch {}
   return null;
 }
@@ -95,10 +90,13 @@ export async function detectCity(): Promise<GeoResult | null> {
     const details = await reverseGeocode(coords);
     return { city: details.label, coords, countryCode: details.countryCode };
   } catch {}
-  // Fallback to IP-based geolocation
+  // Fallback to Google Geolocation API (IP/WiFi/cell)
   try {
-    const ip = await ipFallback();
-    if (ip) return ip;
+    const coords = await googleGeolocate();
+    if (coords) {
+      const details = await reverseGeocode(coords);
+      return { city: details.label, coords, countryCode: details.countryCode };
+    }
   } catch {}
   return null;
 }

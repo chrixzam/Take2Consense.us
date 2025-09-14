@@ -6,6 +6,23 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Consense.us - Group Decision Making Made Easy</title>
+    <!-- Google Maps Extended Component Library -->
+    <script
+      type="module"
+      src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"
+    ></script>
+    <!-- Inject gmpx-api-loader with API key from Vite env -->
+    <script type="module">
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.warn("VITE_GOOGLE_MAPS_API_KEY is not set. Place Picker won't work.");
+      } else {
+        const loader = document.createElement("gmpx-api-loader");
+        loader.setAttribute("key", apiKey);
+        loader.setAttribute("solution-channel", "GMP_GE_placepicker_v2");
+        document.head.appendChild(loader);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

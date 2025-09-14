@@ -1,6 +1,9 @@
 import React from 'react';
 import type { FeedEvent } from '../types';
 import type { PlaceSuggestion, EventSuggestion } from '../agents/service';
+import { loadGoogleMaps } from '../utils/googleMapsLoader';
+
+type Coords = { lat: number; lon: number };
 
 interface AgentPlanModalProps {
   open: boolean;
@@ -12,9 +15,152 @@ interface AgentPlanModalProps {
   places?: PlaceSuggestion[];
   events?: EventSuggestion[];
   onAddFromPlan?: (ev: FeedEvent) => void;
+  onRemoveFromPlan?: (ev: FeedEvent) => void;
+  originCoords?: Coords;
 }
 
-export default function AgentPlanModal({ open, onClose, idea, planText, model, provider, places = [], events = [], onAddFromPlan }: AgentPlanModalProps) {
+export default function AgentPlanModal({ open, onClose, idea, planText, model, provider, places = [], events = [], onAddFromPlan, onRemoveFromPlan, originCoords }: AgentPlanModalProps) {
+  const mapRef = React.useRef<HTMLDivElement | null>(null);
+  // Use any to avoid requiring @types/google.maps
+  const mapInstanceRef = React.useRef<any>(null);
+  const markersRef = React.useRef<any[] | null>(null);
+  const [addedKeys, setAddedKeys] = React.useState<Set<string>>(new Set());
+
+  // Load Google Maps and render markers for suggested places when modal opens/updates
+  React.useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const gmaps = await loadGoogleMaps({ libraries: ['marker'] });
+        if (cancelled) return;
+
+        // Create map instance if needed
+        if (mapRef.current && !mapInstanceRef.current) {
+          const firstPlace = places[0];
+          const center = firstPlace
+            ? { lat: firstPlace.lat, lng: firstPlace.lon }
+            : originCoords
+            ? { lat: originCoords.lat, lng: originCoords.lon }
+            : { lat: 37.7749, lng: -122.4194 };
+          mapInstanceRef.current = new gmaps.Map(mapRef.current, {
+            center,
+            zoom: firstPlace ? 12 : 10,
+            mapId: undefined,
+          });
+        }
+
+        // Add/update markers for places
+        if (mapInstanceRef.current) {
+          // Clear prior markers
+          if (markersRef.current) {
+            // @ts-ignore - handle both Marker and AdvancedMarkerElement
+            markersRef.current.forEach(m => m.setMap && m.setMap(null));
+          }
+          const useAdvanced = !!gmaps.marker && !!gmaps.marker.AdvancedMarkerElement;
+          const ms: any[] = [];
+          places.slice(0, 25).forEach(p => {
+            const position = { lat: p.lat, lng: p.lon };
+            if (useAdvanced) {
+              const m = new gmaps.marker.AdvancedMarkerElement({ map: mapInstanceRef.current!, position, title: p.name });
+              ms.push(m);
+            } else {
+              const m = new gmaps.Marker({ map: mapInstanceRef.current!, position, title: p.name });
+              ms.push(m);
+            }
+          });
+          markersRef.current = ms as any;
+
+          // Fit bounds if we have multiple places
+          if (places.length > 1) {
+            const bounds = new gmaps.LatLngBounds();
+            places.forEach(p => bounds.extend({ lat: p.lat, lng: p.lon }));
+            mapInstanceRef.current.fitBounds(bounds, 32);
+          } else if (places.length === 1) {
+            // Recenter for a single place as well
+            const p = places[0];
+            mapInstanceRef.current.setCenter({ lat: p.lat, lng: p.lon });
+            mapInstanceRef.current.setZoom(14);
+          }
+        }
+      } catch (_) {
+        // Ignore load errors; map is optional in draft
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, places, originCoords?.lat, originCoords?.lon]);
+
+  // Recenter on origin if there are no places yet or places cleared
+  React.useEffect(() => {
+    if (!open || !originCoords) return;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (!places || places.length === 0) {
+      try {
+        map.setCenter({ lat: originCoords.lat, lng: originCoords.lon });
+        map.setZoom(12);
+      } catch {}
+    }
+  }, [open, originCoords?.lat, originCoords?.lon, places?.length]);
+
+  // Build stable keys to track items added and support undo without IDs
+  const placeKey = (p: PlaceSuggestion) => `place:${p.name}|${p.address ?? ''}|${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
+  const eventKey = (e: EventSuggestion) => `event:${e.title}|${e.place ?? ''}|${e.start ?? ''}|${e.url ?? ''}`;
+
+  // Toggle helper for add/undo
+  const toggleAddPlace = (p: PlaceSuggestion) => {
+    if (!onAddFromPlan && !onRemoveFromPlan) return;
+    const key = placeKey(p);
+    const isAdded = addedKeys.has(key);
+    const feed: FeedEvent = {
+      title: p.name,
+      description: `${p.type.replace('_',' ')}${p.priceLevel ? ` • ${String(p.priceLevel).includes('VERY_EXPENSIVE') ? '$$$$' : String(p.priceLevel).includes('EXPENSIVE') ? '$$$' : String(p.priceLevel).includes('MODERATE') ? '$$' : String(p.priceLevel).includes('INEXPENSIVE') ? '$' : String(p.priceLevel).includes('FREE') ? 'Free' : ''}` : ''}${p.address ? ` • ${p.address}` : ''} • ~${p.distKm.toFixed(1)} km`,
+      category: p.type,
+      locationName: p.name,
+      sourceUrl: p.url,
+      lat: p.lat,
+      lon: p.lon,
+      address: p.address,
+    };
+    if (isAdded) {
+      onRemoveFromPlan && onRemoveFromPlan(feed);
+      setAddedKeys(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    } else {
+      onAddFromPlan && onAddFromPlan(feed);
+      setAddedKeys(prev => new Set(prev).add(key));
+    }
+  };
+
+  const toggleAddEvent = (e: EventSuggestion) => {
+    if (!onAddFromPlan && !onRemoveFromPlan) return;
+    const key = eventKey(e);
+    const isAdded = addedKeys.has(key);
+    const feed: FeedEvent = {
+      title: e.title,
+      description: e.start ? new Date(e.start).toLocaleString() : undefined,
+      category: e.category,
+      start: e.start,
+      locationName: e.place,
+      sourceUrl: e.url,
+    };
+    if (isAdded) {
+      onRemoveFromPlan && onRemoveFromPlan(feed);
+      setAddedKeys(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    } else {
+      onAddFromPlan && onAddFromPlan(feed);
+      setAddedKeys(prev => new Set(prev).add(key));
+    }
+  };
   // Render plan text with clickable markdown-style links [title](url)
   const renderPlanWithLinks = (text: string) => {
     const parts: React.ReactNode[] = [];
@@ -53,8 +199,12 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
           <p className="text-sm text-gray-500 mt-1">Idea: {idea || 'Untitled idea'}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4">
-          <div className="md:col-span-2 p-5 max-h-[60vh] overflow-auto whitespace-pre-wrap text-gray-800 border-b md:border-b-0 md:border-r border-gray-100">
-            {renderPlanWithLinks(planText)}
+          <div className="md:col-span-2 p-0 md:p-5 max-h-[60vh] overflow-auto border-b md:border-b-0 md:border-r border-gray-100">
+            {/* Map container (optional; loads when API key present) */}
+            <div className="w-full h-48 md:rounded-md bg-gray-100" ref={mapRef} />
+            <div className="p-5 whitespace-pre-wrap text-gray-800">
+              {renderPlanWithLinks(planText)}
+            </div>
           </div>
           <div className="p-5 max-h-[60vh] overflow-auto">
             <h4 className="text-sm font-semibold text-gray-900 mb-2">Suggestions</h4>
@@ -65,32 +215,43 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
               <div className="mb-4">
                 <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Nearby places</div>
                 <ul className="space-y-2">
-                  {places.map((p, idx) => (
-                    <li key={`p-${idx}`} className="text-sm text-gray-800 flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium">{p.name}</div>
-                        <div className="text-xs text-gray-500">{p.type.replace('_',' ')} • ~{p.distKm.toFixed(1)} km</div>
-                        {p.url && (
-                          <a href={p.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:text-blue-700">Open map</a>
+                  {places.map((p, idx) => {
+                    const price = (() => {
+                      if (!p.priceLevel) return undefined;
+                      const s = String(p.priceLevel);
+                      if (s.includes('VERY_EXPENSIVE')) return '$$$$';
+                      if (s.includes('EXPENSIVE')) return '$$$';
+                      if (s.includes('MODERATE')) return '$$';
+                      if (s.includes('INEXPENSIVE')) return '$';
+                      if (s.includes('FREE')) return 'Free';
+                      return undefined;
+                    })();
+                    return (
+                      <li key={`p-${idx}`} className="text-sm text-gray-800 flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-medium">{p.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {p.type.replace('_',' ')} • ~{p.distKm.toFixed(1)} km{price ? ` • ${price}` : ''}
+                          </div>
+                          {p.address && (
+                            <div className="text-xs text-gray-500">{p.address}</div>
+                          )}
+                          {p.url && (
+                            <a href={p.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:text-blue-700">Open map</a>
+                          )}
+                        </div>
+                        {onAddFromPlan && (
+                          <button
+                            type="button"
+                            className="shrink-0 text-xs text-green-700 hover:text-green-800"
+                            onClick={() => toggleAddPlace(p)}
+                          >
+                            {addedKeys.has(placeKey(p)) ? 'Undo' : '+ Add'}
+                          </button>
                         )}
-                      </div>
-                      {onAddFromPlan && (
-                        <button
-                          type="button"
-                          className="shrink-0 text-xs text-green-700 hover:text-green-800"
-                          onClick={() => onAddFromPlan({
-                            title: p.name,
-                            description: `${p.type.replace('_',' ')} • ~${p.distKm.toFixed(1)} km`,
-                            category: p.type,
-                            locationName: p.name,
-                            sourceUrl: p.url,
-                          } as FeedEvent)}
-                        >
-                          + Add
-                        </button>
-                      )}
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -113,16 +274,9 @@ export default function AgentPlanModal({ open, onClose, idea, planText, model, p
                         <button
                           type="button"
                           className="shrink-0 text-xs text-green-700 hover:text-green-800"
-                          onClick={() => onAddFromPlan({
-                            title: e.title,
-                            description: e.start ? new Date(e.start).toLocaleString() : undefined,
-                            category: e.category,
-                            start: e.start,
-                            locationName: e.place,
-                            sourceUrl: e.url,
-                          } as FeedEvent)}
+                          onClick={() => toggleAddEvent(e)}
                         >
-                          + Add
+                          {addedKeys.has(eventKey(e)) ? 'Undo' : '+ Add'}
                         </button>
                       )}
                     </li>

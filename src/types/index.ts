@@ -47,4 +47,8 @@ export interface FeedEvent {
   end?: string;   // ISO string
   locationName?: string;
   sourceUrl?: string;
+  // Optional geo hints when coming from place suggestions
+  lat?: number;
+  lon?: number;
+  address?: string;
 }

@@ -230,6 +230,55 @@ function App() {
     setCurrentSession(null);
   };
 
+  const handleCreateSessionFromAgentPlan = (subject: string, feedEvents: FeedEvent[]) => {
+    const name = subject && subject.trim() ? subject.trim() : 'New Planning Session';
+    const newSessionBase: GroupSession = {
+      id: Date.now().toString(),
+      shareId: generateSessionId(),
+      name,
+      description: '',
+      members: [currentUser],
+      events: [],
+      city: currentCity,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const ideas: EventIdea[] = (feedEvents || []).map((ev) => {
+      const start = ev.start ? new Date(ev.start) : new Date();
+      const end = ev.end ? new Date(ev.end) : null;
+      const duration = end && !Number.isNaN(end.getTime()) && end > start
+        ? Math.max(30, Math.round((end.getTime() - start.getTime()) / (1000 * 60)))
+        : 120;
+      const title = ev.title || 'Untitled event';
+      const description = ev.description || '';
+      const category = categorizeEvent(title, description);
+      return {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title,
+        description,
+        category,
+        location: ev.locationName || currentCity,
+        budget: 0,
+        duration,
+        suggestedBy: 'Agent Plan',
+        date: start,
+        sourceUrl: ev.sourceUrl,
+        votes: 0,
+        voters: [],
+        createdAt: new Date(),
+      } as EventIdea;
+    });
+
+    const newSession: GroupSession = {
+      ...newSessionBase,
+      events: ideas,
+    };
+
+    setSessions(prev => [newSession, ...prev]);
+    setCurrentSession(newSession);
+  };
+
   // Show create form
   if (showCreateForm) {
     return (
@@ -302,6 +351,7 @@ function App() {
         userCountry={userCountry}
         currentCity={currentCity}
         onOpenProfile={() => setShowProfile(true)}
+        onCreateSessionFromPlan={handleCreateSessionFromAgentPlan}
         onCityChange={async (city) => {
           setCurrentCity(city);
           // Try to forward-geocode the city name to update coords

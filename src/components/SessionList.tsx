@@ -21,9 +21,10 @@ interface SessionListProps {
   userCountry?: string;
   onAddEventFromFeed?: (ev: FeedEvent) => void;
   onOpenProfile?: () => void;
+  onCreateSessionFromPlan?: (subject: string, events: FeedEvent[]) => void;
 }
 
-export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed, onOpenProfile }: SessionListProps) {
+export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed, onOpenProfile, onCreateSessionFromPlan }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const [ideaText, setIdeaText] = useState('');
   const [planning, setPlanning] = useState(false);
@@ -34,6 +35,40 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
   const [planError, setPlanError] = useState<string | null>(null);
   const [suggestedPlaces, setSuggestedPlaces] = useState<Array<{ name: string; type: string; lat: number; lon: number; distKm: number; url: string }>>([]);
   const [suggestedEvents, setSuggestedEvents] = useState<Array<{ title: string; place?: string; start?: string; url?: string; category?: string }>>([]);
+  const [selectedPlanEvents, setSelectedPlanEvents] = useState<FeedEvent[]>([]);
+
+  const isSameFeedEvent = (a: FeedEvent, b: FeedEvent) => (
+    a.title === b.title &&
+    (a.start || '') === (b.start || '') &&
+    (a.locationName || '') === (b.locationName || '') &&
+    (a.sourceUrl || '') === (b.sourceUrl || '') &&
+    (a.address || '') === (b.address || '') &&
+    String(a.lat ?? '') === String(b.lat ?? '') &&
+    String(a.lon ?? '') === String(b.lon ?? '')
+  );
+
+  const startPlanning = async () => {
+    setPlanError(null);
+    if (!ideaText.trim()) {
+      setPlanError('Please enter an idea to plan.');
+      return;
+    }
+    setPlanning(true);
+    try {
+      const res = await planWithAgent(ideaText.trim(), 'planner', userCoords, currentCity, userCountry);
+      setPlanText(res.text);
+      setPlanModel(res.model);
+      setPlanProvider(res.provider);
+      setSuggestedPlaces(res.places || []);
+      setSuggestedEvents(res.events || []);
+      setSelectedPlanEvents([]);
+      setPlanModalOpen(true);
+    } catch (e) {
+      setPlanError('Failed to get a plan.');
+    } finally {
+      setPlanning(false);
+    }
+  };
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffTime = now.getTime() - new Date(date).getTime();
@@ -67,7 +102,10 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
                 value={ideaText}
                 onChange={(e) => setIdeaText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCreateNew();
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    startPlanning();
+                  }
                 }}
                 placeholder="Type your idea and we'll plan it together…"
                 className="w-full bg-transparent px-5 py-5 pr-44 text-lg text-gray-100 placeholder-gray-400 rounded-2xl outline-none focus:ring-2 focus:ring-cyan-500/60"
@@ -75,27 +113,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
               />
               <button
                 type="button"
-                onClick={async () => {
-                  setPlanError(null);
-                  if (!ideaText.trim()) {
-                    setPlanError('Please enter an idea to plan.');
-                    return;
-                  }
-                  setPlanning(true);
-                  try {
-                    const res = await planWithAgent(ideaText.trim(), 'planner', userCoords, currentCity, userCountry);
-                    setPlanText(res.text);
-                    setPlanModel(res.model);
-                    setPlanProvider(res.provider);
-                    setSuggestedPlaces(res.places || []);
-                    setSuggestedEvents(res.events || []);
-                    setPlanModalOpen(true);
-                  } catch (e) {
-                    setPlanError('Failed to get a plan.');
-                  } finally {
-                    setPlanning(false);
-                  }
-                }}
+                onClick={startPlanning}
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-medium shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 disabled:opacity-60"
                 disabled={planning}
               >
@@ -230,7 +248,14 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
       </div>
       <AgentPlanModal
         open={planModalOpen}
-        onClose={() => setPlanModalOpen(false)}
+        onClose={() => {
+          // Create a session using the idea as subject and any selected events
+          if (onCreateSessionFromPlan) {
+            onCreateSessionFromPlan(ideaText.trim(), selectedPlanEvents);
+          }
+          setPlanModalOpen(false);
+          setSelectedPlanEvents([]);
+        }}
         idea={ideaText}
         planText={planText}
         model={planModel}
@@ -238,8 +263,13 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
         places={suggestedPlaces}
         events={suggestedEvents}
         onAddFromPlan={(ev: FeedEvent) => {
-          if (onAddEventFromFeed) onAddEventFromFeed(ev);
+          // Collect selected events locally for session creation on close, prevent duplicates
+          setSelectedPlanEvents(prev => prev.some(e => isSameFeedEvent(e, ev)) ? prev : [...prev, ev]);
         }}
+        onRemoveFromPlan={(ev: FeedEvent) => {
+          setSelectedPlanEvents(prev => prev.filter(e => !isSameFeedEvent(e, ev)));
+        }}
+        originCoords={userCoords}
       />
     </div>
     </div>
