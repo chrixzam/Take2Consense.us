@@ -20,7 +20,8 @@ interface SessionViewProps {
 export function SessionView({ session, currentUser, onUpdateSession, onBack }: SessionViewProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeView, setActiveView] = useState<'grid' | 'calendar' | 'random'>('grid');
+  const [showRandomModal, setShowRandomModal] = useState(false);
+  const [activeView, setActiveView] = useState<'grid' | 'calendar'>('grid');
 
   const handleAddIdea = (ideaData: {
     title: string;
@@ -180,7 +181,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
             onSubmit={handleAddIdea}
             currentCity={session.city}
             sessionName={session.name}
-            onOpenRandom={() => setActiveView('random')}
+            onOpenRandom={() => setShowRandomModal(true)}
           />
 
           {/* View Toggle */}
@@ -189,7 +190,6 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
               <h2 className="text-xl font-semibold text-gray-900">
                 {activeView === 'grid' && 'Event Ideas'}
                 {activeView === 'calendar' && 'Calendar View'}
-                {activeView === 'random' && 'Random Picker'}
               </h2>
               {session.events.length > 0 && (
                 <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
@@ -227,9 +227,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
             <CalendarView events={session.events} />
           )}
 
-          {activeView === 'random' && (
-            <RandomSuggestion events={session.events} />
-          )}
+          {/* Random picker moved to modal; removed redundant bottom view */}
         </div>
       </main>
 
@@ -246,6 +244,27 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
       />
+
+      {/* Random Picker Modal */}
+      {showRandomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowRandomModal(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Random Picker</h3>
+              <button
+                onClick={() => setShowRandomModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50">
+              <RandomSuggestion events={session.events} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
