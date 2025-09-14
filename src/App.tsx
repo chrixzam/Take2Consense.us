@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { SessionList } from './components/SessionList';
 import { SessionCreationForm } from './components/SessionCreationForm';
+import { SessionJoinForm } from './components/SessionJoinForm';
 import { SessionView } from './components/SessionView';
 import { User, GroupSession } from './types';
+import { generateSessionId } from './utils/sessionId';
 
 function App() {
   const [sessions, setSessions] = useState<GroupSession[]>([]);
   const [currentSession, setCurrentSession] = useState<GroupSession | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinError, setJoinError] = useState<string>('');
   const [currentUser] = useState<User>({ id: '1', name: 'You' });
   const [currentCity, setCurrentCity] = useState('San Francisco, CA');
 
@@ -44,6 +48,15 @@ function App() {
       // For demo purposes, we'll just mark it as detected
       localStorage.setItem('detectedLocation', 'true');
     }
+    
+    // Check for join parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinSessionId = urlParams.get('join');
+    if (joinSessionId) {
+      setShowJoinForm(true);
+      // Clear the URL parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const handleCreateSession = (sessionData: {
@@ -54,6 +67,7 @@ function App() {
   }) => {
     const newSession: GroupSession = {
       id: Date.now().toString(),
+      shareId: generateSessionId(),
       name: sessionData.name,
       description: sessionData.description,
       members: sessionData.members.map((name, index) => ({
@@ -71,6 +85,43 @@ function App() {
     setCurrentSession(newSession);
   };
 
+  const handleJoinSession = (sessionId: string, userName: string) => {
+    // Find session by shareId
+    const sessionToJoin = sessions.find(session => session.shareId === sessionId);
+    
+    if (!sessionToJoin) {
+      setJoinError('Session not found. Please check the session ID and try again.');
+      return;
+    }
+    
+    // Check if user is already a member
+    const isExistingMember = sessionToJoin.members.some(member => 
+      member.name.toLowerCase() === userName.toLowerCase()
+    );
+    
+    if (!isExistingMember) {
+      // Add user to session members
+      const updatedSession = {
+        ...sessionToJoin,
+        members: [...sessionToJoin.members, {
+          id: Date.now().toString(),
+          name: userName
+        }],
+        updatedAt: new Date()
+      };
+      
+      setSessions(prev => prev.map(session => 
+        session.id === sessionToJoin.id ? updatedSession : session
+      ));
+      
+      setCurrentSession(updatedSession);
+    } else {
+      setCurrentSession(sessionToJoin);
+    }
+    
+    setShowJoinForm(false);
+    setJoinError('');
+  };
   const handleSelectSession = (session: GroupSession) => {
     setCurrentSession(session);
   };
@@ -88,11 +139,22 @@ function App() {
 
   // Show create form
   if (showCreateForm) {
-  return (
+    return (
       <SessionCreationForm
         onCreateSession={handleCreateSession}
         onCancel={() => setShowCreateForm(false)}
         currentCity={currentCity}
+      />
+    );
+  }
+
+  // Show join form
+  if (showJoinForm) {
+    return (
+      <SessionJoinForm
+        onJoinSession={handleJoinSession}
+        onCancel={() => { setShowJoinForm(false); setJoinError(''); }}
+        error={joinError}
       />
     );
   }
@@ -115,6 +177,7 @@ function App() {
       sessions={sessions}
       onSelectSession={handleSelectSession}
       onCreateNew={() => setShowCreateForm(true)}
+      onJoinSession={() => setShowJoinForm(true)}
     />
   );
 }

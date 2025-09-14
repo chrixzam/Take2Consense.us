@@ -5,9 +5,10 @@ import { EventCard } from './EventCard';
 import { CalendarView } from './CalendarView';
 import { RandomSuggestion } from './RandomSuggestion';
 import { CitySelector } from './CitySelector';
+import { ShareSessionModal } from './ShareSessionModal';
 import { EventIdea, User, GroupSession } from '../types';
 import { categorizeEvent } from '../utils/eventCategories';
-import { Calendar, Grid3X3, Shuffle, Sparkles, Users, MapPin } from 'lucide-react';
+import { Calendar, Grid3X3, Shuffle, Sparkles, Users, MapPin, Share2 } from 'lucide-react';
 
 interface SessionViewProps {
   session: GroupSession;
@@ -18,6 +19,7 @@ interface SessionViewProps {
 
 export function SessionView({ session, currentUser, onUpdateSession, onBack }: SessionViewProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [activeView, setActiveView] = useState<'grid' | 'calendar' | 'random'>('grid');
 
   const handleAddIdea = (ideaData: {
@@ -168,6 +170,13 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
                     {member.name.charAt(0).toUpperCase()}
                   </div>
                 ))}
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full text-xs font-medium text-blue-700 hover:from-blue-200 hover:to-blue-300 transition-all"
+                  title="Share session"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
             {session.description && (
@@ -239,6 +248,13 @@ export function SessionView({ session, currentUser, onUpdateSession, onBack }: S
         onCityChange={handleCityChange}
         onClose={() => setShowCitySelector(false)}
         isOpen={showCitySelector}
+      />
+      
+      <ShareSessionModal
+        sessionId={session.shareId}
+        sessionName={session.name}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
       />
     </div>
   );

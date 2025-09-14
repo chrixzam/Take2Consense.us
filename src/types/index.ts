@@ -21,6 +21,7 @@ export interface User {
 
 export interface GroupSession {
   id: string;
+  shareId: string;
   name: string;
   description?: string;
   members: User[];
