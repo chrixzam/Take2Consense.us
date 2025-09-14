@@ -17,7 +17,11 @@ function App() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinError, setJoinError] = useState<string>('');
-  const [currentUser, setCurrentUser] = useState<User>({ id: '1', name: 'You' });
+  const [currentUser, setCurrentUser] = useState<User>({ 
+    id: '1', 
+    name: 'You',
+    interests: ['Food & Dining', 'Entertainment', 'Outdoor Activities', 'Culture & Arts', 'Music']
+  });
   const [currentCity, setCurrentCity] = useState('San Francisco, CA');
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [userCountry, setUserCountry] = useState<string | undefined>(undefined);
