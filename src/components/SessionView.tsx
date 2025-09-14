@@ -298,9 +298,6 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{session.events.length} event ideas</span>
-                    </div>
-                  </div>
                   {/* Session dates and creation info */}
                   <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
                     <div>
