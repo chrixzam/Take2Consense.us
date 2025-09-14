@@ -37,7 +37,8 @@ function resolveToken(propToken?: string): string | null {
   const globalToken = typeof window !== 'undefined' ? (window as any).EVENTBRITE_TOKEN : null;
   const lsToken = typeof window !== 'undefined' ? localStorage.getItem('eventbrite_token') : null;
   const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('eventbrite_token') : null;
-  return propToken || envToken || globalToken || lsToken || urlToken || null;
+  const codeToken = 'OY7A2DAHKARRAOSOI5HP';
+  return propToken || envToken || globalToken || lsToken || urlToken || codeToken || null;
 }
 
 function detectTokenSource(propToken?: string): string | null {
@@ -50,7 +51,7 @@ function detectTokenSource(propToken?: string): string | null {
   if (globalToken) return 'global';
   if (lsToken) return 'localStorage';
   if (urlToken) return 'url';
-  return null;
+  return 'code';
 }
 
 function formatDate(isoLocal: string): string {
