@@ -44,9 +44,9 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
         }
       }}
     >
-      {event.imageDataUrl && (
+      {(event.imageDataUrl || event.linkImageUrl) && (
         <div className="w-full h-40 bg-gray-50 overflow-hidden">
-          <img src={event.imageDataUrl} alt="Event" className="w-full h-full object-cover" />
+          <img src={event.imageDataUrl || event.linkImageUrl} alt="Event" className="w-full h-full object-cover" />
         </div>
       )}
       <div className="p-6">
@@ -63,6 +63,9 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
             </h3>
             {event.description && (
               <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description}</p>
+            )}
+            {!event.description && event.linkDescription && (
+              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.linkDescription}</p>
             )}
           </div>
           {onDelete && (
@@ -118,6 +121,16 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
               </a>
             )}
           </div>
+          {event.sourceUrl && (
+            <div className="ml-2 flex items-center space-x-2 text-xs text-gray-500">
+              {event.linkFaviconUrl && (
+                <img src={event.linkFaviconUrl} alt="favicon" className="w-3 h-3 rounded-sm" />
+              )}
+              <span className="truncate max-w-[10rem]">
+                {event.linkSiteName || (() => { try { return new URL(event.sourceUrl!).hostname; } catch { return 'link'; } })()}
+              </span>
+            </div>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onVote(event.id); }}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${

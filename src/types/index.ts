@@ -13,6 +13,11 @@ export interface EventIdea {
   createdAt: Date;
   imageDataUrl?: string; // base64 data URL for uploaded image
   sourceUrl?: string;    // optional external link
+  linkTitle?: string;
+  linkDescription?: string;
+  linkImageUrl?: string;
+  linkSiteName?: string;
+  linkFaviconUrl?: string;
 }
 
 export interface User {

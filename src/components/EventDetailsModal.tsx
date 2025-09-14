@@ -32,9 +32,9 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
-        {event.imageDataUrl && (
+        {(event.imageDataUrl || event.linkImageUrl) && (
           <div className="w-full h-60 bg-gray-50 overflow-hidden">
-            <img src={event.imageDataUrl} alt="Event" className="w-full h-full object-cover" />
+            <img src={event.imageDataUrl || event.linkImageUrl} alt="Event" className="w-full h-full object-cover" />
           </div>
         )}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -77,6 +77,10 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
                 Open Link
               </a>
             </div>
+          )}
+
+          {!event.description && event.linkDescription && (
+            <p className="text-gray-700 leading-relaxed">{event.linkDescription}</p>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">

@@ -13,6 +13,7 @@ import { categorizeEvent } from '../utils/eventCategories';
 import { forwardGeocodeCity } from '../utils/geolocation';
 import { Calendar, Grid3X3, Sparkles, Users, MapPin, Share2, Trash2 } from 'lucide-react';
 import type { FeedEvent } from '../types';
+import { fetchLinkPreview } from '../utils/linkPreview';
 
 interface SessionViewProps {
   session: GroupSession;
@@ -113,6 +114,28 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
     };
 
     onUpdateSession(updatedSession);
+
+    // If link present, fetch preview metadata in background and merge
+    if (newEvent.sourceUrl) {
+      (async () => {
+        const meta = await fetchLinkPreview(newEvent.sourceUrl!);
+        if (!meta) return;
+        const merged = {
+          ...newEvent,
+          linkTitle: meta.title,
+          linkDescription: meta.description,
+          linkImageUrl: meta.imageUrl,
+          linkSiteName: meta.siteName,
+          linkFaviconUrl: meta.faviconUrl,
+        } as EventIdea;
+        const sessionWithMeta: GroupSession = {
+          ...updatedSession,
+          events: updatedSession.events.map(ev => ev.id === newEvent.id ? merged : ev),
+          updatedAt: new Date(),
+        };
+        onUpdateSession(sessionWithMeta);
+      })();
+    }
   };
 
   const handleVote = (eventId: string) => {
@@ -179,6 +202,27 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
       updatedAt: new Date(),
     };
     onUpdateSession(updatedSession);
+
+    if (newEvent.sourceUrl) {
+      (async () => {
+        const meta = await fetchLinkPreview(newEvent.sourceUrl!);
+        if (!meta) return;
+        const merged: EventIdea = {
+          ...newEvent,
+          linkTitle: meta.title,
+          linkDescription: meta.description,
+          linkImageUrl: meta.imageUrl,
+          linkSiteName: meta.siteName,
+          linkFaviconUrl: meta.faviconUrl,
+        };
+        const sessionWithMeta: GroupSession = {
+          ...updatedSession,
+          events: updatedSession.events.map(ev => ev.id === newEvent.id ? merged : ev),
+          updatedAt: new Date(),
+        };
+        onUpdateSession(sessionWithMeta);
+      })();
+    }
   };
 
   const handleCityChange = (newCity: string) => {
