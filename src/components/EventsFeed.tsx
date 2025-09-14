@@ -4,6 +4,7 @@ type EventbriteEvent = {
   id: string;
   name: { text: string | null };
   description?: { text: string | null };
+  summary?: string | null;
   url: string;
   start: { timezone: string; local: string };
   end: { timezone: string; local: string };
@@ -26,6 +27,8 @@ type EventsFeedProps = {
   token?: string;
   // Optional: limit number of events shown
   limit?: number;
+  // Optional: force a specific organization ID
+  organizationId?: string;
 };
 
 function resolveToken(propToken?: string): string | null {
@@ -47,45 +50,104 @@ function formatDate(isoLocal: string): string {
   });
 }
 
-export function EventsFeed({ token, limit = 6 }: EventsFeedProps) {
+async function fetchJSON(url: string, token: string, signal?: AbortSignal) {
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+    signal,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HTTP ${res.status} on ${url}: ${text || res.statusText}`);
+  }
+  return res.json();
+}
+
+export function EventsFeed({ token, limit = 6, organizationId }: EventsFeedProps) {
   const [events, setEvents] = useState<EventbriteEvent[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debug, setDebug] = useState<string | null>(null);
 
   const resolvedToken = useMemo(() => resolveToken(token), [token]);
 
   useEffect(() => {
     if (!resolvedToken) return;
     const controller = new AbortController();
-    const fetchEvents = async () => {
+    const base = 'https://www.eventbriteapi.com/v3';
+    const tryFetch = async () => {
+      setLoading(true);
+      setError(null);
+      setDebug(null);
       try {
-        setLoading(true);
-        setError(null);
-        // Use owned_events for the authenticated user; include upcoming/live
-        const url = new URL('https://www.eventbriteapi.com/v3/users/me/owned_events/');
-        url.searchParams.set('status', 'live,started');
-        url.searchParams.set('order_by', 'start_asc');
-        url.searchParams.set('expand', 'venue');
-        url.searchParams.set('token', resolvedToken);
-        const res = await fetch(url.toString(), { signal: controller.signal });
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`Eventbrite error ${res.status}: ${text || res.statusText}`);
+        // 1) Try users/me/owned_events
+        const q = new URLSearchParams({ status: 'live,started', order_by: 'start_asc', expand: 'venue,logo' });
+        let data: any = null;
+        try {
+          data = await fetchJSON(`${base}/users/me/owned_events/?${q.toString()}`, resolvedToken, controller.signal);
+          const items = Array.isArray(data?.events) ? data.events : [];
+          if (items.length > 0) {
+            setEvents(items);
+            return;
+          }
+          setDebug('No events in owned_events; trying other endpoints.');
+        } catch (err: any) {
+          setDebug(`owned_events failed: ${err.message}`);
         }
-        const data = await res.json();
-        const items: EventbriteEvent[] = Array.isArray(data?.events) ? data.events : [];
-        setEvents(items);
+
+        // 2) Try users/me/events (attending/created)
+        try {
+          data = await fetchJSON(`${base}/users/me/events/?${q.toString()}`, resolvedToken, controller.signal);
+          const items = Array.isArray(data?.events) ? data.events : [];
+          if (items.length > 0) {
+            setEvents(items);
+            return;
+          }
+          setDebug((d) => (d ? d + ' | ' : '') + 'users/me/events empty; trying org.');
+        } catch (err: any) {
+          setDebug((d) => (d ? d + ' | ' : '') + `users/me/events failed: ${err.message}`);
+        }
+
+        // 3) If we have an organizationId prop, use that; otherwise fetch first org
+        let orgId = organizationId;
+        if (!orgId) {
+          try {
+            const orgs = await fetchJSON(`${base}/users/me/organizations/`, resolvedToken, controller.signal);
+            const first = Array.isArray(orgs?.organizations) ? orgs.organizations[0] : null;
+            orgId = first?.id || null;
+          } catch (err: any) {
+            setDebug((d) => (d ? d + ' | ' : '') + `failed to load organizations: ${err.message}`);
+          }
+        }
+
+        if (orgId) {
+          try {
+            data = await fetchJSON(`${base}/organizations/${orgId}/events/?${q.toString()}`, resolvedToken, controller.signal);
+            const items = Array.isArray(data?.events) ? data.events : [];
+            setEvents(items);
+            return;
+          } catch (err: any) {
+            setDebug((d) => (d ? d + ' | ' : '') + `org events failed: ${err.message}`);
+          }
+        }
+
+        // If we got here, nothing worked
+        setEvents([]);
+        setError('No events found or access denied.');
       } catch (e: any) {
         if (e.name === 'AbortError') return;
-        setError(e?.message || 'Failed to load events');
         setEvents([]);
+        setError(e?.message || 'Failed to load events');
       } finally {
         setLoading(false);
       }
     };
-    fetchEvents();
+    tryFetch();
     return () => controller.abort();
-  }, [resolvedToken]);
+  }, [resolvedToken, organizationId]);
 
   const hasToken = Boolean(resolvedToken);
   const displayEvents = (events || []).slice(0, limit);
@@ -115,7 +177,12 @@ export function EventsFeed({ token, limit = 6 }: EventsFeedProps) {
           )}
 
           {!loading && error && (
-            <div className="text-red-600 text-sm">{error}</div>
+            <div className="text-red-600 text-sm">
+              {error}
+              {debug && (
+                <div className="mt-1 text-xs text-gray-500">{debug}</div>
+              )}
+            </div>
           )}
 
           {!loading && !error && displayEvents.length === 0 && (
@@ -151,6 +218,9 @@ export function EventsFeed({ token, limit = 6 }: EventsFeedProps) {
                       )}
                       {ev.venue?.address?.localized_address_display}
                     </div>
+                    {ev.summary && (
+                      <p className="text-sm text-gray-700 mt-1 line-clamp-2">{ev.summary}</p>
+                    )}
                   </div>
                 </li>
               ))}
@@ -163,4 +233,3 @@ export function EventsFeed({ token, limit = 6 }: EventsFeedProps) {
 }
 
 export default EventsFeed;
-
