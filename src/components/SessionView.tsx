@@ -21,9 +21,10 @@ interface SessionViewProps {
   onUpdateSession: (session: GroupSession) => void;
   onDeleteSession?: (sessionId: string) => void;
   onBack: () => void;
+  onOpenProfile?: () => void;
 }
 
-export function SessionView({ session, currentUser, onUpdateSession, onDeleteSession, onBack }: SessionViewProps) {
+export function SessionView({ session, currentUser, onUpdateSession, onDeleteSession, onBack, onOpenProfile }: SessionViewProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRandomModal, setShowRandomModal] = useState(false);
@@ -270,6 +271,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
         memberCount={session.members.length}
         currentCity={session.city}
         onCityEdit={() => setShowCitySelector(true)}
+        onSettings={onOpenProfile}
       />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

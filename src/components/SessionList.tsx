@@ -19,9 +19,10 @@ interface SessionListProps {
   onCityChange: (city: string) => void;
   userCountry?: string;
   onAddEventFromFeed?: (ev: FeedEvent) => void;
+  onOpenProfile?: () => void;
 }
 
-export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed }: SessionListProps) {
+export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSession, onDeleteSession, userCoords, currentCity, onCityChange, userCountry, onAddEventFromFeed, onOpenProfile }: SessionListProps) {
   const [showCitySelector, setShowCitySelector] = useState(false);
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -37,7 +38,7 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation currentCity={currentCity} onCityEdit={() => setShowCitySelector(true)} />
+      <Navigation currentCity={currentCity} onCityEdit={() => setShowCitySelector(true)} onSettings={onOpenProfile} />
       
       <div className="p-4">
       <div className="max-w-4xl mx-auto">

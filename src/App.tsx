@@ -4,6 +4,7 @@ import { SessionCreationForm } from './components/SessionCreationForm';
 import { SessionJoinForm } from './components/SessionJoinForm';
 import { SessionView } from './components/SessionView';
 import { User, GroupSession, FeedEvent, EventIdea } from './types';
+import UserProfile from './components/UserProfile';
 import VersionBadge from './components/VersionBadge';
 import { generateSessionId } from './utils/sessionId';
 import { detectCity, forwardGeocodeCity } from './utils/geolocation';
@@ -16,14 +17,15 @@ function App() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinError, setJoinError] = useState<string>('');
-  const [currentUser] = useState<User>({ id: '1', name: 'You' });
+  const [currentUser, setCurrentUser] = useState<User>({ id: '1', name: 'You' });
   const [currentCity, setCurrentCity] = useState('San Francisco, CA');
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [userCountry, setUserCountry] = useState<string | undefined>(undefined);
   const [toast, setToast] = useState<string | null>(null);
   const [pendingFeedEvent, setPendingFeedEvent] = useState<FeedEvent | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
 
-  // Load sessions from localStorage
+  // Load sessions and user from localStorage
   useEffect(() => {
     const savedSessions = localStorage.getItem('groupSessions');
     if (savedSessions) {
@@ -41,6 +43,13 @@ function App() {
       }));
       setSessions(parsedSessions);
     }
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      try {
+        const parsed: User = JSON.parse(savedUser);
+        if (parsed && parsed.id) setCurrentUser(parsed);
+      } catch {}
+    }
   }, []);
 
   // Save sessions to localStorage
@@ -49,6 +58,13 @@ function App() {
       localStorage.setItem('groupSessions', JSON.stringify(sessions));
     }
   }, [sessions]);
+
+  // Persist user profile
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    }
+  }, [currentUser]);
 
   // Auto-detect location on first load (with caching)
   useEffect(() => {
@@ -242,6 +258,20 @@ function App() {
     );
   }
 
+  // Show user profile
+  if (showProfile) {
+    return (
+      <>
+        <UserProfile
+          user={currentUser}
+          onUpdateUser={setCurrentUser}
+          onBack={() => setShowProfile(false)}
+        />
+        <VersionBadge />
+      </>
+    );
+  }
+
   // Show session view if one is selected
   if (currentSession) {
     return (
@@ -252,6 +282,7 @@ function App() {
           onUpdateSession={handleUpdateSession}
           onDeleteSession={handleDeleteSession}
           onBack={handleBackToSessions}
+          onOpenProfile={() => setShowProfile(true)}
         />
         <VersionBadge />
       </>
@@ -270,6 +301,7 @@ function App() {
         userCoords={userCoords || undefined}
         userCountry={userCountry}
         currentCity={currentCity}
+        onOpenProfile={() => setShowProfile(true)}
         onCityChange={async (city) => {
           setCurrentCity(city);
           // Try to forward-geocode the city name to update coords
