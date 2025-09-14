@@ -271,19 +271,19 @@ export function PlanningInput({
     <>
       {/* Idea input box under hero text (glassy underline style; buttons under text) */}
       <div className="max-w-2xl mx-auto mt-6 px-2">
-        <div className="relative rounded-2xl bg-gradient-to-r from-blue-400 to-cyan-400 ring-1 ring-white/30 shadow-xl shadow-blue-500/30 pb-12">
+        <div className="relative rounded-2xl bg-gradient-to-r from-blue-50 to-cyan-50 ring-1 ring-gray-200 shadow-lg shadow-blue-100/50 pb-12">
           <input
             type="text"
             value={ideaText}
             onChange={(e) => setIdeaText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your idea and we'll plan it together…"
-            className="w-full bg-transparent px-5 pr-44 py-5 text-lg text-white placeholder-white/70 rounded-2xl outline-none border-b border-white/30 focus:border-white/50"
+            className="w-full bg-transparent px-5 pr-44 py-5 text-lg text-gray-800 placeholder-gray-500 rounded-2xl outline-none border-b border-gray-300 focus:border-blue-400"
             aria-label="Type your idea"
           />
           {/* Bottom action bar: icons on left, Start button on right */}
           <div className="absolute left-3 right-2 bottom-2 flex items-center justify-between">
-            <div className="flex items-center gap-3 text-gray-300">
+            <div className="flex items-center gap-3 text-gray-600">
               <CalendarFilter
                 selectedStartDate={selectedStartDate}
                 selectedEndDate={selectedEndDate}
