@@ -1,14 +1,15 @@
 import React from 'react';
-import { MapPin, DollarSign, Clock, Calendar, Heart, User } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Calendar, Heart, User, Trash2 } from 'lucide-react';
 import { EventIdea } from '../types';
 
 interface EventCardProps {
   event: EventIdea;
   onVote: (eventId: string) => void;
   hasVoted: boolean;
+  onDelete?: (eventId: string) => void;
 }
 
-export function EventCard({ event, onVote, hasVoted }: EventCardProps) {
+export function EventCard({ event, onVote, hasVoted, onDelete }: EventCardProps) {
   const categoryColors = {
     'Food & Dining': 'bg-orange-100 text-orange-800',
     'Entertainment': 'bg-purple-100 text-purple-800',
@@ -46,6 +47,20 @@ export function EventCard({ event, onVote, hasVoted }: EventCardProps) {
               <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description}</p>
             )}
           </div>
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm('Delete this idea? This cannot be undone.')) {
+                  onDelete(event.id);
+                }
+              }}
+              className="ml-3 text-gray-400 hover:text-red-600 transition-colors"
+              title="Delete idea"
+              aria-label="Delete idea"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-4 text-sm text-gray-600">

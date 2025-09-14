@@ -107,6 +107,16 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
     onUpdateSession(updatedSession);
   };
 
+  const handleDeleteIdea = (eventId: string) => {
+    const updatedEvents = session.events.filter(ev => ev.id !== eventId);
+    const updatedSession = {
+      ...session,
+      events: updatedEvents,
+      updatedAt: new Date()
+    };
+    onUpdateSession(updatedSession);
+  };
+
   const handleAddFromFeed = (ev: FeedEvent) => {
     const start = ev.start ? new Date(ev.start) : new Date();
     const end = ev.end ? new Date(ev.end) : null;
@@ -285,6 +295,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                   event={event}
                   onVote={handleVote}
                   hasVoted={event.voters.includes(currentUser.id)}
+                  onDelete={handleDeleteIdea}
                 />
               ))}
               {session.events.length === 0 && (
