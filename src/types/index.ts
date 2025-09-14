@@ -24,6 +24,7 @@ export interface User {
   id: string;
   name: string;
   avatar?: string;
+  interests?: string[];
 }
 
 export interface GroupSession {

@@ -12,20 +12,43 @@ interface UserProfileProps {
 export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileProps) {
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar || '');
+  const [interests, setInterests] = useState<string[]>(user.interests || []);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Common interest categories
+  const availableInterests = [
+    'Food & Dining', 'Entertainment', 'Outdoor Activities', 'Culture & Arts',
+    'Sports', 'Shopping', 'Music', 'Nightlife', 'History', 'Technology',
+    'Travel', 'Photography', 'Nature', 'Fitness', 'Gaming', 'Books',
+    'Movies', 'Theater', 'Museums', 'Festivals', 'Dancing', 'Cooking',
+    'Wine & Cocktails', 'Coffee', 'Adventure Sports', 'Beach', 'Hiking'
+  ];
 
   useEffect(() => {
     setName(user.name);
     setAvatar(user.avatar || '');
+    setInterests(user.interests || []);
   }, [user.id]);
 
   const handleSave = () => {
-    const updated: User = { ...user, name: name.trim() || 'You', avatar: avatar.trim() || undefined };
+    const updated: User = { 
+      ...user, 
+      name: name.trim() || 'You', 
+      avatar: avatar.trim() || undefined,
+      interests: interests.length > 0 ? interests : undefined
+    };
     onUpdateUser(updated);
     onBack();
   };
 
+  const toggleInterest = (interest: string) => {
+    setInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
   async function fileToDataUrl(file: File): Promise<string> {
     // Resize large images to max 512px to keep localStorage small
     const load = (f: File) => new Promise<HTMLImageElement>((resolve, reject) => {
@@ -138,6 +161,34 @@ export default function UserProfile({ user, onUpdateUser, onBack }: UserProfileP
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-sm text-gray-500 mt-1">Shown to other members in sessions.</p>
+            </div>
+
+            {/* Interests */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Interests</label>
+              <p className="text-sm text-gray-500 mb-3">Select your interests to get better event suggestions.</p>
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {availableInterests.map(interest => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => toggleInterest(interest)}
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                      interests.includes(interest)
+                        ? 'bg-blue-100 border-blue-300 text-blue-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {interests.length > 0 
+                  ? `${interests.length} interests selected`
+                  : 'No interests selected'
+                }
+              </p>
             </div>
 
             {/* Actions */}
