@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, Users, MapPin, Plus, Clock, Sparkles, UserPlus } from 'lucide-react';
 import { Navigation } from './Navigation';
+import { EventsFeed } from './EventsFeed';
 import { GroupSession } from '../types';
 
 interface SessionListProps {
@@ -151,6 +152,9 @@ export function SessionList({ sessions, onSelectSession, onCreateNew, onJoinSess
             </div>
           </div>
         )}
+
+        {/* Events feed at the bottom of the home page */}
+        <EventsFeed limit={6} />
       </div>
     </div>
     </div>
