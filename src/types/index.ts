@@ -11,6 +11,8 @@ export interface EventIdea {
   votes: number;
   voters: string[];
   createdAt: Date;
+  imageDataUrl?: string; // base64 data URL for uploaded image
+  sourceUrl?: string;    // optional external link
 }
 
 export interface User {

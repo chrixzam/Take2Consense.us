@@ -44,6 +44,11 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
         }
       }}
     >
+      {event.imageDataUrl && (
+        <div className="w-full h-40 bg-gray-50 overflow-hidden">
+          <img src={event.imageDataUrl} alt="Event" className="w-full h-full object-cover" />
+        </div>
+      )}
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">

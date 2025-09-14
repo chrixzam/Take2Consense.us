@@ -10,6 +10,8 @@ interface IdeaSubmissionFormProps {
     duration: number;
     date: Date;
     suggestedBy: string;
+    imageDataUrl?: string;
+    sourceUrl?: string;
   }) => void;
   currentCity: string;
   sessionName: string;
@@ -25,7 +27,9 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
     budget: 50,
     duration: 2,
     date: new Date(),
-    suggestedBy: 'You'
+    suggestedBy: 'You',
+    imageDataUrl: undefined as string | undefined,
+    sourceUrl: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,7 +43,9 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
         budget: 50,
         duration: 2,
         date: new Date(),
-        suggestedBy: 'You'
+        suggestedBy: 'You',
+        imageDataUrl: undefined,
+        sourceUrl: ''
       });
       setIsExpanded(false);
     }
@@ -110,7 +116,7 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
               className="w-full px-0 py-2 text-xl font-medium placeholder-gray-400 border-0 border-b-2 border-gray-200 focus:border-blue-600 focus:ring-0 bg-transparent"
               autoFocus
             />
-          </div>
+        </div>
 
           <div>
             <textarea
@@ -119,6 +125,18 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          {/* Link input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Link (optional)</label>
+            <input
+              type="url"
+              placeholder="https://example.com/details or tickets"
+              value={formData.sourceUrl}
+              onChange={(e) => setFormData({ ...formData, sourceUrl: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -179,6 +197,46 @@ export function IdeaSubmissionForm({ onSubmit, currentCity, sessionName, onOpenR
                 onChange={(e) => setFormData({ ...formData, duration: parseFloat(e.target.value) || 1 })}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+            </div>
+          </div>
+
+          {/* Image upload */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Image (optional)</label>
+            <div className="flex items-start gap-4">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  // Basic size guard: ~2MB
+                  if (file.size > 2 * 1024 * 1024) {
+                    alert('Image is too large. Please select an image under 2MB.');
+                    e.currentTarget.value = '';
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const result = typeof reader.result === 'string' ? reader.result : undefined;
+                    setFormData({ ...formData, imageDataUrl: result });
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+              />
+              {formData.imageDataUrl && (
+                <div className="relative">
+                  <img src={formData.imageDataUrl} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, imageDataUrl: undefined })}
+                    className="mt-2 text-xs text-gray-600 hover:text-gray-900"
+                  >
+                    Remove image
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

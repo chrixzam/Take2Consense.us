@@ -92,6 +92,8 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
     duration: number;
     date: Date;
     suggestedBy: string;
+    imageDataUrl?: string;
+    sourceUrl?: string;
   }) => {
     const category = categorizeEvent(ideaData.title, ideaData.description);
     
@@ -166,6 +168,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
       duration,
       suggestedBy: currentUser.name,
       date: start,
+      sourceUrl: ev.sourceUrl,
       votes: 0,
       voters: [],
       createdAt: new Date(),

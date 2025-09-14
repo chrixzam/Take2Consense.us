@@ -32,6 +32,11 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+        {event.imageDataUrl && (
+          <div className="w-full h-60 bg-gray-50 overflow-hidden">
+            <img src={event.imageDataUrl} alt="Event" className="w-full h-full object-cover" />
+          </div>
+        )}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
@@ -59,6 +64,19 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
         <div className="p-6 space-y-6">
           {event.description && (
             <p className="text-gray-700 leading-relaxed">{event.description}</p>
+          )}
+
+          {event.sourceUrl && (
+            <div>
+              <a
+                href={event.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg"
+              >
+                Open Link
+              </a>
+            </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
@@ -108,4 +126,3 @@ export default function EventDetailsModal({ event, isOpen, hasVoted, onClose, on
     </div>
   );
 }
-

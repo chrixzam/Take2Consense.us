@@ -133,6 +133,7 @@ function App() {
         duration,
         suggestedBy: 'Events Feed',
         date: start,
+        sourceUrl: ev.sourceUrl,
         votes: 0,
         voters: [],
         createdAt: new Date(),
