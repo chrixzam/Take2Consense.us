@@ -375,6 +375,7 @@ export function SessionView({ session, currentUser, onUpdateSession, onDeleteSes
                   onVote={handleVote}
                   hasVoted={event.voters.includes(currentUser.id)}
                   onDelete={handleDeleteIdea}
+                  currentUser={currentUser}
                   onOpen={(ev) => { setSelectedEvent(ev); setEventQueryParam(ev.id); }}
                 />
               ))}

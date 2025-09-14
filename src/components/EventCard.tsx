@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, DollarSign, Clock, Calendar, ThumbsUp, Trash2 } from 'lucide-react';
-import { EventIdea } from '../types';
+import { EventIdea, User } from '../types';
 
 interface EventCardProps {
   event: EventIdea;
@@ -8,9 +8,10 @@ interface EventCardProps {
   hasVoted: boolean;
   onDelete?: (eventId: string) => void;
   onOpen?: (event: EventIdea) => void;
+  currentUser?: User;
 }
 
-export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCardProps) {
+export function EventCard({ event, onVote, hasVoted, onDelete, onOpen, currentUser }: EventCardProps) {
   const categoryColors = {
     'Food & Dining': 'bg-orange-100 text-orange-800',
     'Entertainment': 'bg-purple-100 text-purple-800',
@@ -53,7 +54,16 @@ export function EventCard({ event, onVote, hasVoted, onDelete, onOpen }: EventCa
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="text-xs text-gray-500">by {event.suggestedBy}</span>
+              <div
+                className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-[10px] font-medium text-gray-700"
+                title={`by ${event.suggestedBy}`}
+              >
+                {currentUser && currentUser.avatar && event.suggestedBy && currentUser.name && event.suggestedBy.toLowerCase() === currentUser.name.toLowerCase() ? (
+                  <img src={currentUser.avatar} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{(event.suggestedBy || '?').charAt(0).toUpperCase()}</span>
+                )}
+              </div>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
               {event.title}
