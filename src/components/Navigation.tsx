@@ -45,18 +45,15 @@ export function Navigation({
                     e.preventDefault(); 
                     onLogoClick(); 
                   } else {
-                    // Allow natural navigation to home when no handler provided
-                    const currentPath = window.location.pathname;
-                    if (currentPath === '/demo') {
-                      e.preventDefault();
-                      window.history.pushState({}, '', '/demo');
-                      window.location.reload();
-                    }
+                    // Always navigate to demo page
+                    e.preventDefault();
+                    window.history.pushState({}, '', '/demo');
+                    window.location.reload();
                   }
                 }}
                 className="flex items-center space-x-3 hover:opacity-90 transition-opacity"
-                aria-label="Go to home"
-                title="Go to home"
+                aria-label="Go to demo"
+                title="Go to demo"
               >
                 <Logo size={40} />
                 <div>
@@ -71,21 +68,6 @@ export function Navigation({
 
             {/* Right section */}
             <div className="flex items-center space-x-3">
-              {/* Demo Link */}
-              {window.location.pathname !== '/demo' && (
-                <a
-                  href="/demo"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.history.pushState({}, '', '/demo');
-                    window.location.reload();
-                  }}
-                  className="px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  Try Demo
-                </a>
-              )}
-              
               {/* Current Location Display */}
               <div className="flex items-center space-x-2">
                 <button
